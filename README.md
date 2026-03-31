@@ -1,2 +1,1 @@
-# Projecte Informatica_PauGómez_AlejandroCarrión_CarlotaSola
-Projecte d'informàtica on hi serà la versió més actualitzada del codi
+El video de la primera versió es pot trobar clicant en aquest enllaç: https://youtu.be/k-dcjhjiJaI
