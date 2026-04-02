@@ -1,1 +1,2 @@
-En aquest repositori anirem pujant les novetats de les versions juntament amb els videos explicatius.
+Els integrants d'aquest grup som: Alejandro Carrión, Pau Gómez i Carlota Sola
+
