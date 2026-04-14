@@ -107,7 +107,6 @@ frame_graficos = tk.LabelFrame(window, text="Visualización graficos")
 frame_graficos.grid(row = 0, column = 1, padx = (0,10), pady=5, rowspan = 3, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_graficos.grid_columnconfigure(0, weight=1)
 frame_graficos.grid_rowconfigure(0, weight=1)
-
 boton_vuelosschengen = tk.Label(frame_graficos, text="Placeholder")
 boton_vuelosschengen.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
