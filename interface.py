@@ -91,19 +91,36 @@ def limpiar_formulario():
 # ------ CONFIGURACION VENTANA ------
 
 window = Tk()
-window.geometry("1200x400")
+window.geometry("1500x650")
 window.title("Projecte I1")
-window.resizable(True, False)
+# window.resizable(True, False)
 
 window.columnconfigure(0, weight=0)
 window.columnconfigure(1, weight=1)
 window.rowconfigure(0, weight=0)
-window.rowconfigure(1, weight=1)
+window.rowconfigure(1, weight=0)
 window.rowconfigure(2, weight=0)
+
+# ------ FRAME MOSTRAR GRÁFICOS ------
+
+frame_graficos = tk.LabelFrame(window, text="Visualización graficos")
+frame_graficos.grid(row = 0, column = 1, padx = 10, pady=5, rowspan = 3, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_graficos.grid_columnconfigure(0, weight=1)
+frame_graficos.grid_rowconfigure(0, weight=1)
+
+# ------ FRAME VERSIO1 ------
+
+frame_v1 = tk.LabelFrame(window, text="Aeropuertos")
+frame_v1.grid(row = 0, column = 0, padx = 10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_v1.grid_columnconfigure(0, weight=0)
+frame_v1.grid_columnconfigure(1, weight=1)
+frame_v1.grid_rowconfigure(0, weight=0)
+frame_v1.grid_rowconfigure(1, weight=1)
+frame_v1.grid_rowconfigure(2, weight=0)
 
 # ------ FRAME DATOS AEROPUERTO ------
 
-frame_aeropuerto = tk.LabelFrame(window, text="Datos aeropuerto")
+frame_aeropuerto = tk.LabelFrame(frame_v1, text="Datos aeropuerto")
 frame_aeropuerto.grid(row=0, column=0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
 # ------ FORMULARIOS DATOS AEROPUERTOS ------
@@ -128,7 +145,7 @@ entry_lon.grid(row=1, column=2, padx = 10, pady = (0,5), sticky = tk.N + tk.S + 
 
 # ------ FRAME MODIFICACIONES ------
 
-frame_mod = tk.LabelFrame(window, text="Modificacion listado aeropuertos")
+frame_mod = tk.LabelFrame(frame_v1, text="Modificacion listado aeropuertos")
 frame_mod.grid(row = 1, column = 0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_mod.grid_rowconfigure(0, weight=1)
 frame_mod.grid_rowconfigure(1, weight=0)
@@ -153,7 +170,7 @@ boton_archivo.grid(row=2, column=0, columnspan=2, padx=(0,5), pady=5, sticky=tk.
 
 # ------ FRAME VISUALIZACION DATOS ------
 
-frame_visualizacion = tk.LabelFrame(window, text="Opciones respecto al listado de aeropuertos")
+frame_visualizacion = tk.LabelFrame(frame_v1, text="Opciones respecto al listado de aeropuertos")
 frame_visualizacion.grid(row=2, column=0, padx=10, pady=(5,10),sticky = tk.N + tk.S + tk.E + tk.W)
 frame_visualizacion.grid_columnconfigure(0, weight=1)
 frame_visualizacion.grid_columnconfigure(1, weight=1)
@@ -171,7 +188,7 @@ boton_schengen.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + 
 
 # ------ FRAME LISTADO AEROPUERTO ------
 
-frame_listado = tk.LabelFrame(window, text="Listado aeropuertos")
+frame_listado = tk.LabelFrame(frame_v1, text="Listado aeropuertos")
 frame_listado.grid(row=0, column=1, padx=(0,10), pady=10, rowspan=3, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_listado.grid_rowconfigure(0, weight=1)
 frame_listado.grid_columnconfigure(0, weight=1)
@@ -191,6 +208,86 @@ hscrollbar = tk.Scrollbar(frame_listado, orient="horizontal")
 hscrollbar.grid(row=1, column=0, sticky= tk.E +tk.W)
 
 listado.config(xscrollcommand=hscrollbar.set)
+hscrollbar.config(command=listado.xview)
+
+# ------ FRAME VERSIO2 ------
+
+frame_v2 = tk.LabelFrame(window, text="Vuelos")
+frame_v2.grid(row = 1, column = 0, padx = 10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_v2.grid_columnconfigure(0, weight=0)
+frame_v2.grid_columnconfigure(1, weight=1)
+frame_v2.grid_rowconfigure(0, weight=0)
+frame_v2.grid_rowconfigure(1, weight=1)
+frame_v2.grid_rowconfigure(2, weight=0)
+
+# ------ CARGAR/EXPORTAR VUELOS VUELOS ------
+
+frame_gestionvuelos = tk.LabelFrame(frame_v2, text="Cargar/Exportar vuelos")
+frame_gestionvuelos.grid(row = 0, column = 0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_gestionvuelos.grid_rowconfigure(0, weight=1)
+frame_gestionvuelos.grid_columnconfigure(0, weight=1)
+frame_gestionvuelos.grid_columnconfigure(1, weight=1)
+
+boton_cargarvuelos = tk.Button(frame_gestionvuelos, text="Cargar vuelos", command=None)
+boton_cargarvuelos.grid(row=0, column=0, padx=(5,0), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+
+boton_exportarvuelos = tk.Button(frame_gestionvuelos, text="Exportar vuelos", command=None)
+boton_exportarvuelos.grid(row=0, column=1, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+
+# ------ FRAME VISUALIZACION DATOS ------
+
+frame_graficosvuelos = tk.LabelFrame(frame_v2, text="Gráficos")
+frame_graficosvuelos.grid(row=1, column=0, padx=10, pady=(5,10),sticky = tk.N + tk.S + tk.E + tk.W)
+frame_graficosvuelos.grid_columnconfigure(0, weight=1)
+frame_graficosvuelos.grid_columnconfigure(1, weight=1)
+frame_graficosvuelos.grid_rowconfigure(0, weight=1)
+frame_graficosvuelos.grid_rowconfigure(1, weight=1)
+
+boton_vuelosschengen = tk.Button(frame_graficosvuelos, text="Gráfico Schengen/No-Schengen", command=None)
+boton_vuelosschengen.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+boton_vueloscompania = tk.Button(frame_graficosvuelos, text="Gráfico por compañia", command=None)
+boton_vueloscompania.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+boton_vueloshora = tk.Button(frame_graficosvuelos, text="Gráfico por horas", command=None)
+boton_vueloshora.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W, columnspan=2)
+
+# ------ FRAME LISTADO AEROPUERTO ------
+
+frame_listadovuelos = tk.LabelFrame(frame_v2, text="Listado vuelos")
+frame_listadovuelos.grid(row=0, column=1, padx=(0,10), pady=10, rowspan=3, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_listadovuelos.grid_rowconfigure(0, weight=1)
+frame_listadovuelos.grid_columnconfigure(0, weight=1)
+
+# ------ FRAME GOOGLE EARTH ------
+
+frame_earth = tk.LabelFrame(frame_v2, text="Mostrar vuelos en Google Earth")
+frame_earth.grid(row=2, column=0, padx=10, pady=(5,10),sticky = tk.N + tk.S + tk.E + tk.W)
+frame_earth.grid_columnconfigure(0, weight=1)
+frame_earth.grid_columnconfigure(1, weight=1)
+frame_earth.grid_rowconfigure(0, weight=1)
+
+boton_earthvuelos = tk.Button(frame_earth, text="Mostrar todos los vuelos", command=None)
+boton_earthvuelos.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+boton_vueloslargos = tk.Button(frame_earth, text="Mostrar vuelos de larga distancia", command=None)
+boton_vueloslargos.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+# ------ LISTBOX LISTA VUELOS + SCROLLBAR------
+
+listadovuelos = tk.Listbox(frame_listadovuelos, font=("Courier", 14), )
+listadovuelos.grid(row = 0, column = 0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+vscrollbar = tk.Scrollbar(frame_listadovuelos, orient="vertical")
+vscrollbar.grid(row=0, column=1, sticky= tk.N + tk.S)
+
+listadovuelos.config(yscrollcommand=vscrollbar.set)
+vscrollbar.config(command=listado.yview)
+
+hscrollbar = tk.Scrollbar(frame_listadovuelos, orient="horizontal")
+hscrollbar.grid(row=1, column=0, sticky= tk.E +tk.W)
+
+listadovuelos.config(xscrollcommand=hscrollbar.set)
 hscrollbar.config(command=listado.xview)
 
 window.mainloop()
