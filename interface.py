@@ -9,6 +9,7 @@ import sys
 import subprocess
 
 aeropuertos = []
+canvas = None
 
 # ------ FUNCIONES ------
 
@@ -62,8 +63,21 @@ def importar_archivo():
     mostrar_aeropuertos()
     return None
 def grafico():
-    PlotAirports(aeropuertos)
-    return None
+    global canvas, canvas_graficos
+    fig = PlotAirports(aeropuertos)
+    fig.set_size_inches(1, 1)
+    fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.10)
+    #fig.tight_layout()
+
+    canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
+
+    if 'canvas_graficos' in globals():
+        canvas_graficos.grid_forget()
+    canvas_graficos = canvas.get_tk_widget()
+    canvas_graficos.grid(row = 0, column = 0, sticky = tk.N + tk.S + tk.E+tk.W, padx = 15, pady = 15)
+    #canvas_graficos.grid(row = 0, column = 0, padx = 15, pady = 15)
+
+    canvas.draw()
 def archivo_Schengen():
     SaveSchengenAirports(aeropuertos,"Schengen.txt")
     if aeropuertos:
@@ -97,9 +111,9 @@ window.title("Projecte I1")
 
 window.columnconfigure(0, weight=0)
 window.columnconfigure(1, weight=1, minsize=500)
-window.rowconfigure(0, weight=0)
-window.rowconfigure(1, weight=0)
-window.rowconfigure(2, weight=0)
+window.rowconfigure(0, weight=1)
+window.rowconfigure(1, weight=1)
+#window.rowconfigure(2, weight=0)
 
 # ------ FRAME MOSTRAR GRÁFICOS ------
 
@@ -107,15 +121,15 @@ frame_graficos = tk.LabelFrame(window, text="Visualización graficos")
 frame_graficos.grid(row = 0, column = 1, padx = (0,10), pady=5, rowspan = 3, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_graficos.grid_columnconfigure(0, weight=1)
 frame_graficos.grid_rowconfigure(0, weight=1)
-boton_vuelosschengen = tk.Label(frame_graficos, text="Placeholder")
-boton_vuelosschengen.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+canvas_graficos = tk.Canvas(frame_graficos)
+canvas_graficos.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
 # ------ FRAME VERSIO1 ------
 
 frame_v1 = tk.LabelFrame(window, text="Aeropuertos")
 frame_v1.grid(row = 0, column = 0, padx = 10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
-frame_v1.grid_columnconfigure(0, weight=0)
-frame_v1.grid_columnconfigure(1, weight=2)
+frame_v1.grid_columnconfigure(0, weight=1)
+frame_v1.grid_columnconfigure(1, weight=1)
 frame_v1.grid_rowconfigure(0, weight=0)
 frame_v1.grid_rowconfigure(1, weight=1)
 frame_v1.grid_rowconfigure(2, weight=0)
@@ -284,12 +298,12 @@ vscrollbar = tk.Scrollbar(frame_listadovuelos, orient="vertical")
 vscrollbar.grid(row=0, column=1, sticky= tk.N + tk.S)
 
 listadovuelos.config(yscrollcommand=vscrollbar.set)
-vscrollbar.config(command=listado.yview)
+vscrollbar.config(command=listadovuelos.yview)
 
 hscrollbar = tk.Scrollbar(frame_listadovuelos, orient="horizontal")
 hscrollbar.grid(row=1, column=0, sticky= tk.E +tk.W)
 
 listadovuelos.config(xscrollcommand=hscrollbar.set)
-hscrollbar.config(command=listado.xview)
+hscrollbar.config(command=listadovuelos.xview)
 
 window.mainloop()

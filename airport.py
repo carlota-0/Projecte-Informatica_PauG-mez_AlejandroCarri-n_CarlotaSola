@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 class Airport:
     def __init__(self, ICAO, latitude, longitude):
@@ -157,16 +159,19 @@ def PlotAirports (airports):
     #definir no Schengen
     noSchengen = len(airports)-schengen
 
-    plt.bar(["Airports"], schengen, label="Schengen", color="#458B73")
-    plt.bar(["Airports"], noSchengen, bottom=schengen, label="No Schengen", color="#F26076")
+    fig = Figure()
+    ax = fig.add_subplot(111)
 
-    plt.title("Schengen airports")
+    ax.bar(["Aeropuertos"], schengen, label="Schengen", color="#458B73")
+    ax.bar(["Aeropuertos"], noSchengen, bottom=schengen, label="No Schengen", color="#F26076")
 
-    plt.ylabel('Count')
+    #ax.title("Schengen airports")
 
-    plt.legend()
+    ax.set_ylabel('Número aeropuertos')
 
-    plt.show()
+    ax.legend()
+
+    return fig
 
 def MapAirports (airports):
     '''Shows in Google Earth the
