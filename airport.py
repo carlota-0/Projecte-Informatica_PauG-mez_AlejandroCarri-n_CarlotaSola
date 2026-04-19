@@ -165,8 +165,7 @@ def PlotAirports (airports):
     ax.bar(["Aeropuertos"], schengen, label="Schengen", color="#458B73")
     ax.bar(["Aeropuertos"], noSchengen, bottom=schengen, label="No Schengen", color="#F26076")
 
-    #ax.title("Schengen airports")
-
+    ax.set_title("Comparación aeropuertos Schengen y no-Schengen", family = "monospace", weight = "bold", size = "medium")
     ax.set_ylabel('Número aeropuertos')
 
     ax.legend()
