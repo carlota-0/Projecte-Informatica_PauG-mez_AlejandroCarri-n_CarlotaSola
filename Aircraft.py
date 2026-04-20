@@ -88,13 +88,51 @@ def PlotArrivals(aircrafts):
                 marcas.append(horas[i])
         ax.bar(horas, vols, color="#458B73")
         ax.set_xticks(marcas)
-        ax.set_title("Comparación vuelos Schengen y no-Schengen", family="monospace", weight="bold", size="medium")
+        ax.set_title("Distribución de los vuelos entrantes por hora", family="monospace", weight="bold", size="medium")
         ax.set_xlabel('Franjas horarias de vuelos')
         ax.set_ylabel('Número de vuelos')
 
         return fig
     except ValueError:
         print("Error en los datos")
+
+def PlotAirlines(aircrafts):
+
+    aerolineas = []
+
+    for i in range (len(aircrafts)):
+        k = 0
+        encontrado = False
+        while k < len(aerolineas) and not encontrado:
+            if aircrafts[i].company == aerolineas[k]:
+                encontrado = True
+            if not encontrado:
+                k += 1
+        if not encontrado:
+            aerolineas.append(aircrafts[i].company)
+
+    vols = [0] * len(aerolineas)
+
+    for i in range (len(aerolineas)):
+        for k in range (len(aircrafts)):
+            if aircrafts[k].company == aerolineas[i]:
+                vols[i] += 1
+
+
+
+
+    fig = Figure()
+    ax = fig.add_subplot(111)
+
+    ax.bar(aerolineas, vols, color="#458B73")
+    ax.set_title("Número de vuelos por compañía", family="monospace", weight="bold", size="medium")
+    ax.set_xlabel('Aerolíneas')
+    ax.set_ylabel('Número de vuelos')
+    ax.tick_params(axis='x', labelsize=6, labelrotation=90)
+
+    print(len(aerolineas))
+
+    return fig
 
 def MapFlights(aircrafts, airports):
     '''Shows in Google Earth the trajectories of all flights in the list, from
@@ -192,3 +230,76 @@ def LongDistanceArrivals(aircrafts):
             print(f'{aircrafts[i].origin_airport}, de l avió {aircrafts[i]} no està a la llista d aeroports')
 
     return largaDistancia
+
+
+# Gràfic TOP 5 aerolinies més significatives
+''' 
+def PlotAirlinesSignificatives(aircrafts):
+
+    aerolineasTotals = []
+
+    for i in range (len(aircrafts)):
+        k = 0
+        encontrado = False
+        while k < len(aerolineasTotals) and not encontrado:
+            if aircrafts[i].company == aerolineasTotals[k]:
+                encontrado = True
+            if not encontrado:
+                k += 1
+        if not encontrado:
+            aerolineasTotals.append(aircrafts[i].company)
+
+    volsTotals = [0] * len(aerolineasTotals)
+
+    for i in range (len(aerolineasTotals)):
+        for k in range (len(aircrafts)):
+            if aircrafts[k].company == aerolineasTotals[i]:
+                volsTotals[i] += 1
+
+    aerolineas = [""] * 5
+    vols = [0] * len(aerolineas)
+
+    for i in range(len(volsTotals)):
+        for k in range(5):
+            if volsTotals[i] > vols[k]:
+                j = 4
+                while j > k:
+                    vols[j] = vols[j - 1]
+                    aerolineas[j] = aerolineas[j - 1]
+                    j -= 1
+                vols[k] = volsTotals[i]
+                aerolineas[k] = aerolineasTotals[i]
+                break
+
+# --- añadir una barra de la suma de las demás aerolíneas --- 
+    aerolineas.append("Otras")
+    otros = 0
+    for i in range (len(aerolineasTotals)):
+        encontrado = False
+        for k in range (5):
+            if aerolineasTotals[i] == aerolineas[k]:
+                encontrado = True
+        if not encontrado:
+            otros = volsTotals[i]+otros
+    vols.append(otros)
+# -------------------------------------------------------------
+
+# gráfico 
+    fig = Figure()
+    ax = fig.add_subplot(111)
+
+    ax.bar(aerolineas, vols, color="#458B73")
+    ax.set_title("Número de vuelos por compañía (TOP5)", family="monospace", weight="bold", size="medium")
+    ax.set_xlabel('Aerolíneas')
+    ax.set_ylabel('Número de vuelos')
+    ax.tick_params(axis='x', labelsize=10, labelrotation=0)
+
+    print(len(aerolineas))
+
+    return fig
+'''
+
+# test section
+if __name__ == "__main__":
+    aircrafts = LoadArrivals ("Arrivals.txt")
+    PlotArrivals (aircrafts)
