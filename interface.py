@@ -148,7 +148,23 @@ def grafico_vuelosSchengen():
 def grafico_vuelosPorCompania():
     PlotFlightsType(aircrafts)
 def grafico_vuelosPorLlegada():
-    return None
+    global aircrafts
+    if aircrafts:
+        global canvas, canvas_graficos
+        fig = PlotArrivals(aircrafts)
+        fig.set_size_inches(1, 1)
+        fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.10)
+        # fig.tight_layout()
+
+        canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
+
+        if 'canvas_graficos' in globals():
+            canvas_graficos.grid_forget()
+        canvas_graficos = canvas.get_tk_widget()
+        canvas_graficos.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W, padx=15, pady=15)
+        # canvas_graficos.grid(row = 0, column = 0, padx = 15, pady = 15)
+
+        canvas.draw()
 # ------ CONFIGURACION VENTANA ------
 
 window = Tk()

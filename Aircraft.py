@@ -65,6 +65,37 @@ def PlotFlightsType(aircrafts):
 
     return fig
 
+def PlotArrivals(aircrafts):
+    try:
+        horas = []
+        for i in range (24):
+            horas.append(i)
+
+        vols = [0] * len(horas)
+
+        for i in range (len(aircrafts)):
+            horacompleta = aircrafts[i].time_of_landing
+            horacompleta = horacompleta.split(":")
+            hora = int(horacompleta[0])
+            vols[hora] = vols[hora] + 1
+
+        fig = Figure()
+        ax = fig.add_subplot(111)
+
+        marcas = []
+        for i in range (len(horas)):
+            if horas[i]%2 == 0 or horas[i] == 0:
+                marcas.append(horas[i])
+        ax.bar(horas, vols, color="#458B73")
+        ax.set_xticks(marcas)
+        ax.set_title("Comparación vuelos Schengen y no-Schengen", family="monospace", weight="bold", size="medium")
+        ax.set_xlabel('Franjas horarias de vuelos')
+        ax.set_ylabel('Número de vuelos')
+
+        return fig
+    except ValueError:
+        print("Error en los datos")
+
 def MapFlights(aircrafts, airports):
     '''Shows in Google Earth the trajectories of all flights in the list, from
     origin airport to LEBL. Show in different colors the trajectories with origin
