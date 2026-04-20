@@ -45,7 +45,10 @@ def SetSchengen (airport):
 
 def PrintAirport (airport):
     # Prints in console the data of the airport
-     return (f'ICAO: {airport.ICAO}\t\tLAT: {airport.latitude:05.2f}\t\tLON: {airport.longitude:05.2f}\t\tSchengen? {IsSchengenAirport(airport.ICAO)}')
+    if IsSchengenAirport(airport.ICAO):
+        return (f'ICAO: {airport.ICAO}\t\tLAT: {airport.latitude:05.2f}\t\tLON: {airport.longitude:05.2f}\t\tSchengen')
+    elif not IsSchengenAirport(airport.ICAO):
+        return (f'ICAO: {airport.ICAO}\t\tLAT: {airport.latitude:05.2f}\t\tLON: {airport.longitude:05.2f}\t\tNo Schengen')
 
 def LoadAirports (filename):
     '''Opens the file with name received as input and with the format described

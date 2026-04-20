@@ -1,4 +1,5 @@
 from airport import *
+from Aircraft import *
 from tkinter import *
 import tkinter as tk
 from tkinter import ttk
@@ -8,6 +9,7 @@ import os
 import sys
 import subprocess
 
+aircrafts = []
 aeropuertos = []
 canvas = None
 
@@ -104,7 +106,49 @@ def limpiar_formulario():
     entry_lat.delete(0, 'end')
 
 #Funcions V2
+def mostrar_vuelos():
+    listadovuelos.delete(0, 'end')
+    for i in range(len(aircrafts)):
+        listadovuelos.insert(tk.END, f'ID: {aircrafts[i].id}\tCompañía: {aircrafts[i].company}\tOrigen: {aircrafts[i].origin_airport}\tLlegada: {aircrafts[i].time_of_landing}')
+    return None
+def cargar_vuelos():
+    global aircrafts
+    archivo = filedialog.askopenfilename(
+        title="Seleccione un archivo",
+        filetypes=(("Archivos CSV", "*.txt"), ("Todos los archivos", "*.*"))
+    )
+    provisional = LoadArrivals(archivo)
+    for i in range(len(provisional)):
+        encontrado = False
+        j = 0
+        while j < (len(aircrafts)) and not encontrado:
+            if aircrafts[j].id == provisional[i].id:
+                encontrado = True
+            else:
+                j += 1
+        if not(encontrado):
+            aircrafts.append(provisional[i])
+    mostrar_vuelos()
+def grafico_vuelosSchengen():
+    global canvas, canvas_graficos
+    fig = PlotFlightsType(aircrafts)
+    fig.set_size_inches(1, 1)
+    fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.10)
+    #fig.tight_layout()
 
+    canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
+
+    if 'canvas_graficos' in globals():
+        canvas_graficos.grid_forget()
+    canvas_graficos = canvas.get_tk_widget()
+    canvas_graficos.grid(row = 0, column = 0, sticky = tk.N + tk.S + tk.E+tk.W, padx = 15, pady = 15)
+    #canvas_graficos.grid(row = 0, column = 0, padx = 15, pady = 15)
+
+    canvas.draw()
+def grafico_vuelosPorCompania():
+    PlotFlightsType(aircrafts)
+def grafico_vuelosPorLlegada():
+    return None
 # ------ CONFIGURACION VENTANA ------
 
 window = Tk()
@@ -132,7 +176,7 @@ canvas_graficos.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S +
 frame_v1 = tk.LabelFrame(window, text="Aeropuertos")
 frame_v1.grid(row = 0, column = 0, padx = 10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_v1.grid_columnconfigure(0, weight=0)
-frame_v1.grid_columnconfigure(1, weight=1)
+frame_v1.grid_columnconfigure(1, weight=1, minsize=460)
 frame_v1.grid_rowconfigure(0, weight=0)
 frame_v1.grid_rowconfigure(1, weight=1)
 frame_v1.grid_rowconfigure(2, weight=1)
@@ -234,7 +278,7 @@ hscrollbar.config(command=listado.xview)
 frame_v2 = tk.LabelFrame(window, text="Vuelos")
 frame_v2.grid(row = 1, column = 0, padx = 10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_v2.grid_columnconfigure(0, weight=0)
-frame_v2.grid_columnconfigure(1, weight=1)
+frame_v2.grid_columnconfigure(1, weight=1, minsize=480)
 frame_v2.grid_rowconfigure(0, weight=1)
 frame_v2.grid_rowconfigure(1, weight=1)
 frame_v2.grid_rowconfigure(2, weight=1)
@@ -247,13 +291,13 @@ frame_gestionvuelos.grid_rowconfigure(0, weight=1)
 frame_gestionvuelos.grid_columnconfigure(0, weight=1)
 frame_gestionvuelos.grid_columnconfigure(1, weight=1)
 
-boton_cargarvuelos = tk.Button(frame_gestionvuelos, text="Cargar vuelos", command=None)
+boton_cargarvuelos = tk.Button(frame_gestionvuelos, text="Cargar vuelos", command=cargar_vuelos)
 boton_cargarvuelos.grid(row=0, column=0, padx=(5,0), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 boton_exportarvuelos = tk.Button(frame_gestionvuelos, text="Exportar vuelos", command=None)
 boton_exportarvuelos.grid(row=0, column=1, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
-# ------ FRAME VISUALIZACION DATOS ------
+# ------ FRAME GRAFICOS VUELOS ------
 
 frame_graficosvuelos = tk.LabelFrame(frame_v2, text="Gráficos de llegadas")
 frame_graficosvuelos.grid(row=1, column=0, padx=10, pady=(5,10),sticky = tk.N + tk.S + tk.E + tk.W)
@@ -262,13 +306,13 @@ frame_graficosvuelos.grid_columnconfigure(1, weight=1)
 frame_graficosvuelos.grid_rowconfigure(0, weight=1)
 frame_graficosvuelos.grid_rowconfigure(1, weight=1)
 
-boton_vuelosschengen = tk.Button(frame_graficosvuelos, text="Schengen/No-Schengen", command=None)
+boton_vuelosschengen = tk.Button(frame_graficosvuelos, text="Schengen/No-Schengen", command=grafico_vuelosSchengen)
 boton_vuelosschengen.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
-boton_vueloscompania = tk.Button(frame_graficosvuelos, text="Por compañia", command=None)
+boton_vueloscompania = tk.Button(frame_graficosvuelos, text="Por compañia", command=grafico_vuelosPorCompania)
 boton_vueloscompania.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
-boton_vueloshora = tk.Button(frame_graficosvuelos, text="Por horas", command=None)
+boton_vueloshora = tk.Button(frame_graficosvuelos, text="Por horas", command=grafico_vuelosPorLlegada)
 boton_vueloshora.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W, columnspan=2)
 
 # ------ FRAME LISTADO AEROPUERTO ------
@@ -294,7 +338,7 @@ boton_vueloslargos.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.
 
 # ------ LISTBOX LISTA VUELOS + SCROLLBAR------
 
-listadovuelos = tk.Listbox(frame_listadovuelos, font=("Courier", 14), )
+listadovuelos = tk.Listbox(frame_listadovuelos, font=("Courier", 14),)
 listadovuelos.grid(row = 0, column = 0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
 vscrollbar = tk.Scrollbar(frame_listadovuelos, orient="vertical")

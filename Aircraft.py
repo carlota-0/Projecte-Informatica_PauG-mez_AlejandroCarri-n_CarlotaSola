@@ -39,6 +39,32 @@ def SaveFlights(aircrafts, filename):
     fitxer.close()
     print("S'han guardat les dades a " +filename)
 
+def PlotFlightsType(aircrafts):
+    ''' Receives a list of aircraft and shows a stacked bar plot of the number of
+    flights arriving from Schengen countries and the number of non-Schengen
+    '''
+
+    schengen = 0
+    #contar Schengen
+    for i in range (len(aircrafts)):
+        if IsSchengenAirport(aircrafts[i].origin_airport):
+            schengen += 1
+    #definir no Schengen
+    noSchengen = len(aircrafts)-schengen
+
+    fig = Figure()
+    ax = fig.add_subplot(111)
+
+    ax.bar(["Vuelos"], schengen, label="Schengen", color="#458B73")
+    ax.bar(["Vuelos"], noSchengen, bottom=schengen, label="No Schengen", color="#F26076")
+
+    ax.set_title("Comparación vuelos Schengen y no-Schengen", family="monospace", weight="bold", size="medium")
+    ax.set_ylabel('Número de vuelos')
+
+    ax.legend()
+
+    return fig
+
 def MapFlights(aircrafts, airports):
     '''Shows in Google Earth the trajectories of all flights in the list, from
     origin airport to LEBL. Show in different colors the trajectories with origin
@@ -89,7 +115,6 @@ def MapFlights(aircrafts, airports):
 
     fitxer.write('\t</Document>\n</kml>')
     fitxer.close()
-
 
 def LongDistanceArrivals(aircrafts):
     '''Returns a list with the aircrafts from the input list of aircrafts that
