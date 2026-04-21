@@ -13,9 +13,9 @@ Els integrants d'aquest grup som: Alejandro Carrión, Pau Gómez i Carlota Sola
     </td>
   </tr>
   <tr>
-    <td align="center"><b>Alejandro Carrión</b></td>
+    <td align="center"><b>Pau Gómez</b></td>
     <td align="center"><b>Carlota Sola</b></td>
-    <td align="center"><b>Pau Gomez</b></td>
+    <td align="center"><b>Alejandro Carrión</b></td>
   </tr>
 </table>
 
