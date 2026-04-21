@@ -34,7 +34,15 @@ Els integrants d'aquest grup som: Alejandro Carrión, Pau Gómez i Carlota Sola
 
 :minidisc: El video de la versió 1 es pot trobar en aquest enllaç: https://youtu.be/k-dcjhjiJaI
 - [x] VERSIÓ 2:
+Aquesta versió del projecte permet treballar amb els vols que arriben a un aeroport durant el dia amb les següents funcions:
 
+     - Carregar l'arxiu .txt dels vols
+     - Mostrar un gràfic amb els vols que venen segons la seva campanyia o segons l'hora en la que arriben
+     - Mostrar un grafic dels vols que venen segons si venen d'una zona Schengen o no
+     - Mostrar a Google Earth la trajectoria de cada vol desde el seu punt de partida fins al seu destí
+     - Mostrar a Google Earth la trajectoria dels vols de llarga distancia (+2000Km)
+  
 :minidisc: El video de la versió 2 es pot trobar en aquest enllaç:
+
 - [ ] VERSIÓ 3:
 - [ ] VERSIÓ 4:
