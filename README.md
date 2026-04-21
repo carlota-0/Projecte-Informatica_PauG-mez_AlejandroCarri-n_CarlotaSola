@@ -24,7 +24,7 @@ Els integrants d'aquest grup som: Alejandro Carrión, Pau Gómez i Carlota Sola
 
 ## SEGUIMENT DE LES VERSIONS
 
-- [x] VERSIÓ 1:
+- [x] <int>VERSIÓ 1:</ins>
   Aquesta versió permet treballar amb un llistat d'aeroports amb les següents funcions:
 
      - Afegir i suprimir manualment aeroports
@@ -33,7 +33,7 @@ Els integrants d'aquest grup som: Alejandro Carrión, Pau Gómez i Carlota Sola
      - Mostrar les ubicacions a Google Earth
 
 :minidisc: El video de la versió 1 es pot trobar en aquest enllaç: https://youtu.be/k-dcjhjiJaI
-- [x] VERSIÓ 2:
+- [x] <int>VERSIÓ 2:</ins>
 Aquesta versió del projecte permet treballar amb els vols que arriben a un aeroport durant el dia amb les següents funcions:
 
      - Carregar l'arxiu .txt dels vols
@@ -44,5 +44,5 @@ Aquesta versió del projecte permet treballar amb els vols que arriben a un aero
   
 :minidisc: El video de la versió 2 es pot trobar en aquest enllaç:
 
-- [ ] VERSIÓ 3:
-- [ ] VERSIÓ 4:
+- [ ] <int>VERSIÓ 3:</ins>
+- [ ] <int>VERSIÓ 4:</ins>
