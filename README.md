@@ -22,11 +22,11 @@ Els integrants d'aquest grup som: Alejandro Carrión, Pau Gómez i Carlota Sola
 
 
 
-- [x]VERSIÓ 1:
+- [x] VERSIÓ 1:
   
 El video de la versió 1 es pot trobar en aquest enllaç: https://youtu.be/k-dcjhjiJaI
 
-- [x]VERSIÓ 2:
+- [x] VERSIÓ 2:
 El video de la versió 1 es pot trobar en aquest enllaç:
-- [ ]VERSIÓ 3:
-- [ ]VERSIÓ 4:
+- [ ] VERSIÓ 3:
+- [ ] VERSIÓ 4:
