@@ -27,6 +27,6 @@ Els integrants d'aquest grup som: Alejandro Carrión, Pau Gómez i Carlota Sola
 El video de la versió 1 es pot trobar en aquest enllaç: https://youtu.be/k-dcjhjiJaI
 
 - [x] VERSIÓ 2:
-El video de la versió 1 es pot trobar en aquest enllaç:
+El video de la versió 2 es pot trobar en aquest enllaç:
 - [ ] VERSIÓ 3:
 - [ ] VERSIÓ 4:
