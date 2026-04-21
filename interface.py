@@ -1,4 +1,5 @@
 from airport import *
+from Aircraft import *
 from tkinter import *
 import tkinter as tk
 from tkinter import ttk
@@ -8,10 +9,12 @@ import os
 import sys
 import subprocess
 
+aircrafts = []
 aeropuertos = []
+canvas = None
 
 # ------ FUNCIONES ------
-
+#Funcions V1
 def mostrar_aeropuertos():
     listado.delete(0, 'end')
     for i in range(len(aeropuertos)):
@@ -61,9 +64,25 @@ def importar_archivo():
             aeropuertos.append(provisional[i])
     mostrar_aeropuertos()
     return None
-def grafico():
-    PlotAirports(aeropuertos)
-    return None
+def graficoAeropuertos():
+    if aeropuertos:
+        global canvas, canvas_graficos
+        fig = PlotAirports(aeropuertos)
+        fig.set_size_inches(1, 1)
+        fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.10)
+        #fig.tight_layout()
+
+        canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
+
+        if 'canvas_graficos' in globals():
+            canvas_graficos.grid_forget()
+        canvas_graficos = canvas.get_tk_widget()
+        canvas_graficos.grid(row = 0, column = 0, sticky = tk.N + tk.S + tk.E+tk.W, padx = 15, pady = 15)
+        #canvas_graficos.grid(row = 0, column = 0, padx = 15, pady = 15)
+
+        canvas.draw()
+    else:
+        messagebox.showerror('Error','La lista de aeropuertos está vacía')
 def archivo_Schengen():
     SaveSchengenAirports(aeropuertos,"Schengen.txt")
     if aeropuertos:
@@ -72,38 +91,178 @@ def archivo_Schengen():
         messagebox.showwarning('Archivo no guardado', 'No hay aeropuertos para guardar')
     return None
 def map_airports():
-    MapAirports(aeropuertos)
-    messagebox.showinfo("Archivo KML creado", "Se ha creado un archivo \"Ubicaciones.kml\"")
+    if aeropuertos:
+        try:
+            MapAirports(aeropuertos)
 
-    archivo = "Ubicaciones.kml"
-    if sys.platform == "win32":
-        os.startfile(archivo)
-    elif sys.platform == "darwin":
-        subprocess.call(["open", archivo])
-    print(ruta_archivo)
-
-    return None
+            archivo = "Ubicaciones.kml"
+            if sys.platform == "win32":
+                os.startfile(archivo)
+            elif sys.platform == "darwin":
+                subprocess.call(["open", archivo])
+        except (OSError, subprocess.SubprocessError):
+            messagebox.showerror('Error','No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Ubicaciones.kml\"')
+    else:
+        messagebox.showerror('Error','Lista de aeropuertos vacía')
 def limpiar_formulario():
     entry_icao.delete(0, 'end')
     entry_lon.delete(0, 'end')
     entry_lat.delete(0, 'end')
 
+#Funcions V2
+def mostrar_vuelos():
+    listadovuelos.delete(0, 'end')
+    for i in range(len(aircrafts)):
+        listadovuelos.insert(tk.END, f'ID: {aircrafts[i].id}\tCompañía: {aircrafts[i].company}\tOrigen: {aircrafts[i].origin_airport}\tLlegada: {aircrafts[i].time_of_landing}')
+    return None
+def cargar_vuelos():
+    global aircrafts
+    archivo = filedialog.askopenfilename(
+        title="Seleccione un archivo",
+        filetypes=(("Archivos CSV", "*.txt"), ("Todos los archivos", "*.*"))
+    )
+    provisional = LoadArrivals(archivo)
+    for i in range(len(provisional)):
+        encontrado = False
+        j = 0
+        while j < (len(aircrafts)) and not encontrado:
+            if aircrafts[j].id == provisional[i].id:
+                encontrado = True
+            else:
+                j += 1
+        if not(encontrado):
+            aircrafts.append(provisional[i])
+    mostrar_vuelos()
+def exportar_vuelos():
+    archivo = filedialog.askopenfilename(
+        title="Seleccione un archivo .txt",
+        filetypes=(("Archivos de texto","*.txt"), ("Todos los archivos", "*.*"))
+    )
+    try:
+        SaveFlights(aircrafts,archivo)
+    except FileNotFoundError:
+        messagebox.showerror('Error', 'No se ha seleccionado ningún archivo')
+def grafico_vuelosSchengen():
+    if aircrafts:
+        global canvas, canvas_graficos
+        fig = PlotFlightsType(aircrafts)
+        fig.set_size_inches(1, 1)
+        fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.10)
+        #fig.tight_layout()
+
+        canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
+
+        if 'canvas_graficos' in globals():
+            canvas_graficos.grid_forget()
+        canvas_graficos = canvas.get_tk_widget()
+        canvas_graficos.grid(row = 0, column = 0, sticky = tk.N + tk.S + tk.E+tk.W, padx = 15, pady = 15)
+        #canvas_graficos.grid(row = 0, column = 0, padx = 15, pady = 15)
+
+        canvas.draw()
+    else:
+        messagebox.showerror('Error','La lista de vuelos está vacía')
+def grafico_vuelosPorCompania():
+    if aircrafts:
+        global canvas, canvas_graficos
+        fig = PlotAirlines(aircrafts)
+        fig.set_size_inches(1, 1)
+        fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.10)
+        # fig.tight_layout()
+
+        canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
+
+        if 'canvas_graficos' in globals():
+            canvas_graficos.grid_forget()
+        canvas_graficos = canvas.get_tk_widget()
+        canvas_graficos.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W, padx=15, pady=15)
+        # canvas_graficos.grid(row = 0, column = 0, padx = 15, pady = 15)
+
+        canvas.draw()
+    else:
+        messagebox.showerror('Error','La lista de vuelos está vacía')
+def grafico_vuelosPorLlegada():
+    if aircrafts:
+        global canvas, canvas_graficos
+        fig = PlotArrivals(aircrafts)
+        fig.set_size_inches(1, 1)
+        fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.10)
+        # fig.tight_layout()
+
+        canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
+
+        if 'canvas_graficos' in globals():
+            canvas_graficos.grid_forget()
+        canvas_graficos = canvas.get_tk_widget()
+        canvas_graficos.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W, padx=15, pady=15)
+        # canvas_graficos.grid(row = 0, column = 0, padx = 15, pady = 15)
+
+        canvas.draw()
+    else:
+        messagebox.showerror('Error','La lista de vuelos está vacía')
+def earth_largaDistancia():
+    if aircrafts and aeropuertos:
+        try:
+            MapFlights(LongDistanceArrivals(aircrafts,aeropuertos), aeropuertos)
+
+            archivo = "Vuelos.kml"
+            if sys.platform == "win32":
+                os.startfile(archivo)
+            elif sys.platform == "darwin":
+                subprocess.call(["open", archivo])
+        except:
+            messagebox.showerror('Error','No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Vuelos.kml\"')
+    else:
+        messagebox.showerror('Error', 'Faltan los datos de los vuelos, los datos de los aeropuertos o ambos')
+def earth_vuelos():
+    if aircrafts and aeropuertos:
+        try:
+            MapFlights(aircrafts, aeropuertos)
+
+            archivo = "Vuelos.kml"
+            if sys.platform == "win32":
+                os.startfile(archivo)
+            elif sys.platform == "darwin":
+                subprocess.call(["open", archivo])
+        except (OSError, subprocess.SubprocessError):
+            messagebox.showerror('Error','No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Vuelos.kml\"')
+    else:
+        messagebox.showerror('Error','Faltan los datos de los vuelos, los datos de los aeropuertos o ambos')
+
 # ------ CONFIGURACION VENTANA ------
 
 window = Tk()
-window.geometry("1200x400")
+# window.geometry("1500x650")
 window.title("Projecte I1")
-window.resizable(True, False)
+window.minsize(1400, 1)
+# window.resizable(True, False)
 
-window.columnconfigure(0, weight=0)
-window.columnconfigure(1, weight=1)
-window.rowconfigure(0, weight=0)
+window.columnconfigure(0, weight=1, minsize=900)
+window.columnconfigure(1, weight=1, minsize=500)
+window.rowconfigure(0, weight=1)
 window.rowconfigure(1, weight=1)
-window.rowconfigure(2, weight=0)
+
+# ------ FRAME MOSTRAR GRÁFICOS ------
+
+frame_graficos = tk.LabelFrame(window, text="Visualización gráficos")
+frame_graficos.grid(row = 0, column = 1, padx = (0,10), pady=5, rowspan = 3, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_graficos.grid_columnconfigure(0, weight=1)
+frame_graficos.grid_rowconfigure(0, weight=1)
+canvas_graficos = tk.Canvas(frame_graficos)
+canvas_graficos.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+# ------ FRAME VERSIO1 ------
+
+frame_v1 = tk.LabelFrame(window, text="Aeropuertos")
+frame_v1.grid(row = 0, column = 0, padx = 10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_v1.grid_columnconfigure(0, weight=0)
+frame_v1.grid_columnconfigure(1, weight=1, minsize=460)
+frame_v1.grid_rowconfigure(0, weight=0)
+frame_v1.grid_rowconfigure(1, weight=1)
+frame_v1.grid_rowconfigure(2, weight=1)
 
 # ------ FRAME DATOS AEROPUERTO ------
 
-frame_aeropuerto = tk.LabelFrame(window, text="Datos aeropuerto")
+frame_aeropuerto = tk.LabelFrame(frame_v1, text="Datos aeropuerto")
 frame_aeropuerto.grid(row=0, column=0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
 # ------ FORMULARIOS DATOS AEROPUERTOS ------
@@ -111,28 +270,28 @@ frame_aeropuerto.grid(row=0, column=0, padx=10, pady=5, sticky = tk.N + tk.S + t
 lbl_icao = tk.Label(frame_aeropuerto, text="ICAO")
 lbl_icao.grid(row=0, column=0, padx = 10, sticky = tk.W)
 
-entry_icao = tk.Entry(frame_aeropuerto)
+entry_icao = tk.Entry(frame_aeropuerto, width=15)
 entry_icao.grid(row=1, column=0, padx = 10, pady = (0,5), sticky = tk.N + tk.S + tk.E + tk.W)
 
 lbl_lat = tk.Label(frame_aeropuerto, text="Latitud")
 lbl_lat.grid(row=0, column=1, padx = 10, sticky = tk.W)
 
-entry_lat = tk.Entry(frame_aeropuerto)
+entry_lat = tk.Entry(frame_aeropuerto, width=15)
 entry_lat.grid(row=1, column=1, padx = 10, pady = (0,5), sticky = tk.N + tk.S + tk.E + tk.W)
 
 lbl_lon = tk.Label(frame_aeropuerto, text="Longitud")
 lbl_lon.grid(row=0, column=2, padx = 10, sticky = tk.W)
 
-entry_lon = tk.Entry(frame_aeropuerto)
+entry_lon = tk.Entry(frame_aeropuerto, width=15)
 entry_lon.grid(row=1, column=2, padx = 10, pady = (0,5), sticky = tk.N + tk.S + tk.E + tk.W)
 
 # ------ FRAME MODIFICACIONES ------
 
-frame_mod = tk.LabelFrame(window, text="Modificacion listado aeropuertos")
+frame_mod = tk.LabelFrame(frame_v1, text="Modificacion listado aeropuertos")
 frame_mod.grid(row = 1, column = 0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_mod.grid_rowconfigure(0, weight=1)
 frame_mod.grid_rowconfigure(1, weight=0)
-frame_mod.grid_rowconfigure(1, weight=0)
+frame_mod.grid_rowconfigure(2, weight=1)
 frame_mod.grid_columnconfigure(0, weight=1)
 frame_mod.grid_columnconfigure(1, weight=0)
 
@@ -153,25 +312,25 @@ boton_archivo.grid(row=2, column=0, columnspan=2, padx=(0,5), pady=5, sticky=tk.
 
 # ------ FRAME VISUALIZACION DATOS ------
 
-frame_visualizacion = tk.LabelFrame(window, text="Opciones respecto al listado de aeropuertos")
+frame_visualizacion = tk.LabelFrame(frame_v1, text="Opciones respecto al listado de aeropuertos")
 frame_visualizacion.grid(row=2, column=0, padx=10, pady=(5,10),sticky = tk.N + tk.S + tk.E + tk.W)
 frame_visualizacion.grid_columnconfigure(0, weight=1)
 frame_visualizacion.grid_columnconfigure(1, weight=1)
 frame_visualizacion.grid_rowconfigure(0, weight=1)
 frame_visualizacion.grid_rowconfigure(1, weight=1)
 
-boton_grafico = tk.Button(frame_visualizacion, text="Gráfico Schengen/No-Schengen", command=grafico)
+boton_grafico = tk.Button(frame_visualizacion, text="Gráfico Schengen/No-Schengen", command=graficoAeropuertos)
 boton_grafico.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
-boton_kml = tk.Button(frame_visualizacion, text="Generar archivo .kml", command=map_airports)
+boton_kml = tk.Button(frame_visualizacion, text="Visualizar en Google Earth", command=map_airports)
 boton_kml.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
 boton_schengen = tk.Button(frame_visualizacion, text="Guardar aeropuertos Schengen en .txt", command=archivo_Schengen)
 boton_schengen.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W, columnspan=2)
 
-# ------ FRAME LISTADO AEROPUERTO ------
+# ------ FRAME LISTADO AEROPUERTOS ------
 
-frame_listado = tk.LabelFrame(window, text="Listado aeropuertos")
+frame_listado = tk.LabelFrame(frame_v1, text="Listado aeropuertos")
 frame_listado.grid(row=0, column=1, padx=(0,10), pady=10, rowspan=3, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_listado.grid_rowconfigure(0, weight=1)
 frame_listado.grid_columnconfigure(0, weight=1)
@@ -192,5 +351,85 @@ hscrollbar.grid(row=1, column=0, sticky= tk.E +tk.W)
 
 listado.config(xscrollcommand=hscrollbar.set)
 hscrollbar.config(command=listado.xview)
+
+# ------ FRAME VERSIO2 ------
+
+frame_v2 = tk.LabelFrame(window, text="Vuelos")
+frame_v2.grid(row = 1, column = 0, padx = 10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_v2.grid_columnconfigure(0, weight=0)
+frame_v2.grid_columnconfigure(1, weight=1, minsize=480)
+frame_v2.grid_rowconfigure(0, weight=1)
+frame_v2.grid_rowconfigure(1, weight=1)
+frame_v2.grid_rowconfigure(2, weight=1)
+
+# ------ CARGAR/EXPORTAR VUELOS VUELOS ------
+
+frame_gestionvuelos = tk.LabelFrame(frame_v2, text="Cargar/Exportar vuelos")
+frame_gestionvuelos.grid(row = 0, column = 0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_gestionvuelos.grid_rowconfigure(0, weight=1)
+frame_gestionvuelos.grid_columnconfigure(0, weight=1)
+frame_gestionvuelos.grid_columnconfigure(1, weight=1)
+
+boton_cargarvuelos = tk.Button(frame_gestionvuelos, text="Cargar vuelos", command=cargar_vuelos)
+boton_cargarvuelos.grid(row=0, column=0, padx=(5,0), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+
+boton_exportarvuelos = tk.Button(frame_gestionvuelos, text="Exportar vuelos", command=exportar_vuelos)
+boton_exportarvuelos.grid(row=0, column=1, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+
+# ------ FRAME GRAFICOS VUELOS ------
+
+frame_graficosvuelos = tk.LabelFrame(frame_v2, text="Gráficos de llegadas")
+frame_graficosvuelos.grid(row=1, column=0, padx=10, pady=(5,10),sticky = tk.N + tk.S + tk.E + tk.W)
+frame_graficosvuelos.grid_columnconfigure(0, weight=1)
+frame_graficosvuelos.grid_columnconfigure(1, weight=1)
+frame_graficosvuelos.grid_rowconfigure(0, weight=1)
+frame_graficosvuelos.grid_rowconfigure(1, weight=1)
+
+boton_vuelosschengen = tk.Button(frame_graficosvuelos, text="Schengen/No-Schengen", command=grafico_vuelosSchengen)
+boton_vuelosschengen.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+boton_vueloscompania = tk.Button(frame_graficosvuelos, text="Por compañia", command=grafico_vuelosPorCompania)
+boton_vueloscompania.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+boton_vueloshora = tk.Button(frame_graficosvuelos, text="Por horas", command=grafico_vuelosPorLlegada)
+boton_vueloshora.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W, columnspan=2)
+
+# ------ FRAME LISTADO AEROPUERTO ------
+
+frame_listadovuelos = tk.LabelFrame(frame_v2, text="Listado aviones")
+frame_listadovuelos.grid(row=0, column=1, padx=(0,10), pady=10, rowspan=3, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_listadovuelos.grid_rowconfigure(0, weight=1)
+frame_listadovuelos.grid_columnconfigure(0, weight=1)
+
+# ------ FRAME GOOGLE EARTH ------
+
+frame_earth = tk.LabelFrame(frame_v2, text="Mostrar vuelos en Google Earth")
+frame_earth.grid(row=2, column=0, padx=10, pady=(5,10),sticky = tk.N + tk.S + tk.E + tk.W)
+frame_earth.grid_columnconfigure(0, weight=1)
+frame_earth.grid_columnconfigure(1, weight=1)
+frame_earth.grid_rowconfigure(0, weight=1)
+
+boton_earthvuelos = tk.Button(frame_earth, text="Mostrar todos los vuelos", command=earth_vuelos)
+boton_earthvuelos.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+boton_vueloslargos = tk.Button(frame_earth, text="Mostrar vuelos de larga distancia", command=earth_largaDistancia)
+boton_vueloslargos.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+# ------ LISTBOX LISTA VUELOS + SCROLLBAR------
+
+listadovuelos = tk.Listbox(frame_listadovuelos, font=("Courier", 14),)
+listadovuelos.grid(row = 0, column = 0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+vscrollbar = tk.Scrollbar(frame_listadovuelos, orient="vertical")
+vscrollbar.grid(row=0, column=1, sticky= tk.N + tk.S)
+
+listadovuelos.config(yscrollcommand=vscrollbar.set)
+vscrollbar.config(command=listadovuelos.yview)
+
+hscrollbar = tk.Scrollbar(frame_listadovuelos, orient="horizontal")
+hscrollbar.grid(row=1, column=0, sticky= tk.E +tk.W)
+
+listadovuelos.config(xscrollcommand=hscrollbar.set)
+hscrollbar.config(command=listadovuelos.xview)
 
 window.mainloop()

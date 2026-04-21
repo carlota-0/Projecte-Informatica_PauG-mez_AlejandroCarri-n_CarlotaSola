@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 class Airport:
     def __init__(self, ICAO, latitude, longitude):
@@ -43,7 +45,10 @@ def SetSchengen (airport):
 
 def PrintAirport (airport):
     # Prints in console the data of the airport
-     return (f'ICAO: {airport.ICAO}\t\tLAT: {airport.latitude:05.2f}\t\tLON: {airport.longitude:05.2f}\t\tSchengen? {IsSchengenAirport(airport.ICAO)}')
+    if IsSchengenAirport(airport.ICAO):
+        return (f'ICAO: {airport.ICAO}\t\tLAT: {airport.latitude:05.2f}\t\tLON: {airport.longitude:05.2f}\t\tSchengen')
+    elif not IsSchengenAirport(airport.ICAO):
+        return (f'ICAO: {airport.ICAO}\t\tLAT: {airport.latitude:05.2f}\t\tLON: {airport.longitude:05.2f}\t\tNo Schengen')
 
 def LoadAirports (filename):
     '''Opens the file with name received as input and with the format described
@@ -86,7 +91,6 @@ def SaveSchengenAirports (airports, filename):
     above. If the vector is empty no file is created and an error code is
     returned.'''
     if airports == []:
-        print("Lista de aeropuertos vacía")
         return None
     else:
         aeroportsSchengen = []
@@ -157,16 +161,18 @@ def PlotAirports (airports):
     #definir no Schengen
     noSchengen = len(airports)-schengen
 
-    plt.bar(["Airports"], schengen, label="Schengen", color="#458B73")
-    plt.bar(["Airports"], noSchengen, bottom=schengen, label="No Schengen", color="#F26076")
+    fig = Figure()
+    ax = fig.add_subplot(111)
 
-    plt.title("Schengen airports")
+    ax.bar(["Aeropuertos"], schengen, label="Schengen", color="#458B73")
+    ax.bar(["Aeropuertos"], noSchengen, bottom=schengen, label="No Schengen", color="#F26076")
 
-    plt.ylabel('Count')
+    ax.set_title("Comparación aeropuertos Schengen y no-Schengen", family = "monospace", weight = "bold", size = "medium")
+    ax.set_ylabel('Número aeropuertos')
 
-    plt.legend()
+    ax.legend()
 
-    plt.show()
+    return fig
 
 def MapAirports (airports):
     '''Shows in Google Earth the
