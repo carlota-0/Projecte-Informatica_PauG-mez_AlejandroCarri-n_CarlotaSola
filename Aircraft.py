@@ -185,7 +185,7 @@ def MapFlights(aircrafts, airports):
     fitxer.write('\t</Document>\n</kml>')
     fitxer.close()
 
-def LongDistanceArrivals(aircrafts):
+def LongDistanceArrivals(aircrafts,airports):
     '''Returns a list with the aircrafts from the input list of aircrafts that
     arrive to LEBL from an airport that is more that 2000 Km away (this aircraft
     would need special inspection after landing).

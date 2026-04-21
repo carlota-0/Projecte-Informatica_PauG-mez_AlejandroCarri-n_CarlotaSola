@@ -91,7 +91,6 @@ def SaveSchengenAirports (airports, filename):
     above. If the vector is empty no file is created and an error code is
     returned.'''
     if airports == []:
-        print("Lista de aeropuertos vacía")
         return None
     else:
         aeroportsSchengen = []
