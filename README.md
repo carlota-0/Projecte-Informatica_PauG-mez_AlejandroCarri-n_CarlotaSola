@@ -32,7 +32,7 @@ Els integrants d'aquest grup som: Alejandro Carrión, Pau Gómez i Carlota Sola
      - Visualitzar els aeroports Schengen i no Schengen en un gràfic
      - Mostrar les ubicacions a Google Earth
 
-:minidisc: El video de la versió 1 es pot trobar en aquest enllaç: https://youtu.be/k-dcjhjiJaI
+:minidisc: El video de la versió 1 es pot trobar en aquest enllaç: [LINK](https://youtu.be/k-dcjhjiJaI)
 - [x] <int>VERSIÓ 2:</ins>
 Aquesta versió del projecte permet treballar amb els vols que arriben a un aeroport durant el dia amb les següents funcions:
 
