@@ -42,7 +42,7 @@ Aquesta versió del projecte permet treballar amb els vols que arriben a un aero
      - Mostrar a Google Earth la trajectoria de cada vol desde el seu punt de partida fins al seu destí
      - Mostrar a Google Earth la trajectoria dels vols de llarga distancia (+2000Km)
   
-:minidisc: El video de la versió 2 es pot trobar en aquest enllaç:
+:minidisc: El video de la versió 2 es pot trobar en aquest enllaç: [LINK](https://youtu.be/SSS_t_f-p4k)
 
 - [ ] <int>VERSIÓ 3:</ins>
 - [ ] <int>VERSIÓ 4:</ins>
