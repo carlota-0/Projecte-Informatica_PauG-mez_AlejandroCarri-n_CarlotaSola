@@ -1,5 +1,6 @@
 from airport import *
 from Aircraft import *
+from LEBL import *
 from tkinter import *
 import tkinter as tk
 from tkinter import ttk
@@ -320,9 +321,6 @@ boton_suprimir.grid(row=0, column=1, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk
 
 separador_mod = ttk.Separator(frame_mod, orient="horizontal")
 separador_mod.grid(row=1, column=0, columnspan=2, sticky= tk.W + tk.E , padx=5, pady=5)
-
-#entry_archivo = ttk.Entry(frame_mod)
-#entry_archivo.grid(row=2, column=0, padx = 10, pady = (0,5), sticky = tk.N + tk.S + tk.E + tk.W)
 
 boton_archivo = tk.Button(frame_mod, text="Cargar archivo .txt", command=importar_archivo)
 boton_archivo.grid(row=2, column=0, columnspan=2, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
