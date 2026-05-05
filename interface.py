@@ -228,6 +228,22 @@ def earth_vuelos():
     else:
         messagebox.showerror('Error','Faltan los datos de los vuelos, los datos de los aeropuertos o ambos')
 
+#Funcions V3
+def cargar_estructura():
+    return None
+def asignar_puertas():
+    if not aircrafts:
+        messagebox.showerror('Error', 'Listado de aeropuertos vacío')
+    else:
+        return None
+def mostrar_ocupacion():
+    return None
+def mostrar_puertas():
+    listadopuertas.delete(0, 'end')
+    for i in range(len(aeropuertos)):
+        listadopuertas.insert(tk.END, None)
+    return None
+
 # ------ CONFIGURACION VENTANA ------
 
 window = Tk()
@@ -240,6 +256,7 @@ window.columnconfigure(0, weight=1, minsize=900)
 window.columnconfigure(1, weight=1, minsize=500)
 window.rowconfigure(0, weight=1)
 window.rowconfigure(1, weight=1)
+window.rowconfigure(2, weight=1)
 
 # ------ FRAME MOSTRAR GRÁFICOS ------
 
@@ -331,7 +348,7 @@ boton_schengen.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + 
 # ------ FRAME LISTADO AEROPUERTOS ------
 
 frame_listado = tk.LabelFrame(frame_v1, text="Listado aeropuertos")
-frame_listado.grid(row=0, column=1, padx=(0,10), pady=10, rowspan=3, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_listado.grid(row=0, column=1, padx=(0,10), pady=(0,5), rowspan=3, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_listado.grid_rowconfigure(0, weight=1)
 frame_listado.grid_columnconfigure(0, weight=1)
 
@@ -355,7 +372,7 @@ hscrollbar.config(command=listado.xview)
 # ------ FRAME VERSIO2 ------
 
 frame_v2 = tk.LabelFrame(window, text="Vuelos")
-frame_v2.grid(row = 1, column = 0, padx = 10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_v2.grid(row = 1, column = 0, padx = 10, pady=(0,5), sticky = tk.N + tk.S + tk.E + tk.W)
 frame_v2.grid_columnconfigure(0, weight=0)
 frame_v2.grid_columnconfigure(1, weight=1, minsize=480)
 frame_v2.grid_rowconfigure(0, weight=1)
@@ -418,7 +435,7 @@ boton_vueloslargos.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.
 # ------ LISTBOX LISTA VUELOS + SCROLLBAR------
 
 listadovuelos = tk.Listbox(frame_listadovuelos, font=("Courier", 14),)
-listadovuelos.grid(row = 0, column = 0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+listadovuelos.grid(row = 0, column = 0, padx=10, pady=(0,5), sticky = tk.N + tk.S + tk.E + tk.W)
 
 vscrollbar = tk.Scrollbar(frame_listadovuelos, orient="vertical")
 vscrollbar.grid(row=0, column=1, sticky= tk.N + tk.S)
@@ -431,5 +448,59 @@ hscrollbar.grid(row=1, column=0, sticky= tk.E +tk.W)
 
 listadovuelos.config(xscrollcommand=hscrollbar.set)
 hscrollbar.config(command=listadovuelos.xview)
+
+# ------ FRAME V3 ------
+
+frame_v3 = tk.LabelFrame(window, text="Puertas de embarque")
+frame_v3.grid(row = 2, column = 0, padx = 10, pady=(0,5), sticky = tk.N + tk.S + tk.E + tk.W)
+frame_v3.grid_columnconfigure(0, weight=0)
+frame_v3.grid_columnconfigure(1, weight=1, minsize=480)
+frame_v3.grid_rowconfigure(0, weight=1)
+frame_v3.grid_rowconfigure(1, weight=1)
+frame_v3.grid_rowconfigure(2, weight=1)
+
+# ------ GESTIÓ PORTES ------
+
+frame_puertas = tk.LabelFrame(frame_v3, text="Gestión")
+frame_puertas.grid(row = 0, column = 0, padx = 10, pady=(0,5), sticky = tk.N + tk.S + tk.E + tk.W)
+frame_puertas.grid_rowconfigure(0, weight=1)
+frame_puertas.grid_rowconfigure(1, weight=1)
+frame_puertas.grid_columnconfigure(0, weight=1)
+frame_puertas.grid_columnconfigure(1, weight=1)
+
+# ------ BOTONS ------
+
+boton_estructura = tk.Button(frame_puertas, text="Cargar estructura del apuerto", command=cargar_estructura)
+boton_estructura.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+boton_asignarpuerta = tk.Button(frame_puertas, text="Asignar puerta a cada vuelo", command=asignar_puertas)
+boton_asignarpuerta.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+boton_mostrarocupacion = tk.Button(frame_puertas, text="Mostrar ocupación puertas", command=mostrar_ocupacion)
+boton_mostrarocupacion.grid(row = 0, column = 1, padx=5, pady=5, rowspan=2, sticky = tk.N + tk.S + tk.E + tk.W)
+
+# ------ FRAME LISTADO PUERTAS ------
+
+frame_listadopuertas = tk.LabelFrame(frame_v3, text="Listado puertas")
+frame_listadopuertas.grid(row=0, column=1, padx=(0,10), pady=(0,5), rowspan=1, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_listadopuertas.grid_rowconfigure(0, weight=1)
+frame_listadopuertas.grid_columnconfigure(0, weight=1)
+
+# ------ LISTBOX LISTA PUERTAS + SCROLLBAR------
+
+listadopuertas = tk.Listbox(frame_listadopuertas, font=("Courier", 14),)
+listadopuertas.grid(row = 0, column = 0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+
+vscrollbar = tk.Scrollbar(frame_listadopuertas, orient="vertical")
+vscrollbar.grid(row=0, column=1, sticky= tk.N + tk.S)
+
+listadopuertas.config(yscrollcommand=vscrollbar.set)
+vscrollbar.config(command=listadopuertas.yview)
+
+hscrollbar = tk.Scrollbar(frame_listadopuertas, orient="horizontal")
+hscrollbar.grid(row=1, column=0, sticky= tk.E +tk.W)
+
+listadopuertas.config(xscrollcommand=hscrollbar.set)
+hscrollbar.config(command=listadopuertas.xview)
 
 window.mainloop()
