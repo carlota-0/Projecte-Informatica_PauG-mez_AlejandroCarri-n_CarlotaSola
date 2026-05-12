@@ -1,3 +1,6 @@
+
+
+
 from Aircraft import *
 
 class Barcelona_AP:
@@ -126,3 +129,171 @@ def AssignGate (bcn, aircraft):
     except IndexError:
         print('Error error en el array')
         return None
+
+
+def LoadAirportStructure(filename):
+    ''' Crea y devuelve un objeto BarcelonaAP leyendo la estructura del archivo.
+    Si el archivo no existe, devuelve None como código de error.
+    '''
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            # Leemos todas las líneas y quitamos las que estén en blanco
+            lines = [line.strip() for line in file if line.strip()]
+
+        if not lines:
+            return None
+
+        # 1. Leer la cabecera del aeropuerto (ej. "LEBL.txt 2 terminals")
+        header_parts = lines[0].split()
+        airport_code = header_parts[0]
+        airport = BarcelonaAP(airport_code)
+
+        # 2. Recorrer el resto del archivo para construir terminales y áreas
+        i = 1
+        while i < len(lines):
+            if lines[i].startswith("Terminal"):
+                # Ej: "Terminal T1 5 boarding areas"
+                parts = lines[i].split()
+                term_name = parts[1]
+                num_areas = int(parts[2])
+
+                current_terminal = Terminal(term_name)
+
+                # Cargar aerolíneas para esta terminal automáticamente (ej. "T1_Airlines.txt")
+                airline_file = f"{term_name}_Airlines.txt"
+                current_terminal.airlines = LoadAirlines(airline_file)
+
+                airport.terminals.append(current_terminal)
+                i += 1
+
+                # 3. Leer las áreas de embarque de esta terminal
+                for _ in range(num_areas):
+                    # Ej: "Area A Schengen Gates 1 - 11"
+                    # Índices: 0:Area, 1:A, 2:Schengen, 3:Gates, 4:1, 5:-, 6:11
+                    area_parts = lines[i].split()
+                    area_name = area_parts[1]
+                    area_type = area_parts[2]
+                    start_gate = int(area_parts[4])
+                    end_gate = int(area_parts[6])
+
+                    new_area = BoardingArea(area_name, area_type)
+
+                    # Generar el prefijo (Ej: T1 + BA + A + G -> "T1BAAG")
+                    prefix = f"{term_name}BA{area_name}G"
+
+                    # Llamar a SetGates para que genere las puertas 1 a 11
+                    SetGates(new_area, prefix, start_gate, end_gate)
+
+                    # Añadir el área a la terminal actual
+                    current_terminal.boarding_areas.append(new_area)
+                    i += 1
+            else:
+                i += 1  # Por si hay líneas basura, avanzar
+
+        return airport
+
+    except FileNotFoundError:
+        print(f"Error crítico: No se encontró el archivo '{filename}'.")
+        return None
+
+
+def GateOccupancy(bcn):
+    ''' Given a BarcelonaAP object, returns a list of dictionaries with
+    gate names, status, and aircraft id.
+    '''
+    occupancy_list = []
+
+    # Recorremos la jerarquía completa: Aeropuerto -> Terminales -> Áreas -> Puertas
+    for terminal in bcn.terminals:
+        for area in terminal.boarding_areas:
+            for gate in area.gates:
+                # Guardamos la info de forma estructurada
+                puerta_info = {
+                    'terminal': terminal.name,
+                    'area': area.name,
+                    'gate_name': gate.name,
+                    'occupied': gate.occupied,
+                    'aircraft_id': gate.aircraft_id
+                }
+                occupancy_list.append(puerta_info)
+
+    return occupancy_list
+
+
+def PlotGateOccupancy(occupancy_list):
+    ''' BONUS: Builds a plot showing the terminals, boarding areas,
+    and the status of each gate (Free/Occupied).
+    '''
+    import matplotlib.pyplot as plt
+
+    # Creamos un gráfico grande para que quepan todas las puertas
+    fig, ax = plt.subplots(figsize=(14, 8))
+
+    y_labels = []
+    y_ticks = []
+    current_y = 0
+    area_y_map = {}
+
+    # 1. Asignamos una altura (eje Y) a cada Área de Embarque (ej. "T1 - Area A")
+    for item in occupancy_list:
+        area_key = f"{item['terminal']} - Area {item['area']}"
+        if area_key not in area_y_map:
+            area_y_map[area_key] = current_y
+            y_labels.append(area_key)
+            y_ticks.append(current_y)
+            current_y += 1
+
+    # Listas para separar las puertas libres de las ocupadas
+    x_free, y_free = [], []
+    x_occ, y_occ = [], []
+
+    # 2. Posicionamos cada puerta en el mapa
+    for item in occupancy_list:
+        # Extraemos el número de la puerta (Ej: de "T1BAAG11" sacamos el 11)
+        gate_num = int(item['gate_name'].split('G')[-1])
+        area_key = f"{item['terminal']} - Area {item['area']}"
+        y_coord = area_y_map[area_key]
+
+        if item['occupied']:
+            x_occ.append(gate_num)
+            y_occ.append(y_coord)
+            # Dibujamos el ID del avión un poco por encima de la puerta roja
+            ax.text(gate_num, y_coord + 0.2, item['aircraft_id'],
+                    fontsize=8, ha='center', va='bottom', rotation=45, color='black')
+        else:
+            x_free.append(gate_num)
+            y_free.append(y_coord)
+
+    # 3. Dibujamos los "cuadraditos" de las puertas
+    ax.scatter(x_free, y_free, c='#2ECC71', label='Libre', s=100, marker='s', edgecolors='black', alpha=0.7)
+    ax.scatter(x_occ, y_occ, c='#E74C3C', label='Ocupada', s=100, marker='s', edgecolors='black', alpha=0.9)
+
+    # 4. Formato visual del panel
+    ax.set_yticks(y_ticks)
+    ax.set_yticklabels(y_labels)
+    ax.set_xlabel('Número de Puerta', fontsize=12, fontweight='bold')
+    ax.set_title('Panel de Ocupación de Puertas - LEBL.txt', fontsize=16, fontweight='bold')
+    ax.legend(loc='upper right')
+
+    plt.grid(axis='x', linestyle='--', alpha=0.4)  # Cuadrícula vertical para guiarse mejor
+    plt.tight_layout()
+    plt.show()
+def IsAirlineInTerminal(terminal, name):
+    ''' Given terminal of class Terminal and the name of one airline, this
+    function returns True if the airline is in the list of airlines boarding in
+    this terminal and False otherwise.
+    '''
+    # 1. Comprobar si el nombre de la aerolínea es un string nulo/vacío
+    if name == "" or name is None:
+        print("Error: El nombre de la aerolínea no puede estar vacío.")
+        return False
+
+    # 2. Comprobar si la terminal tiene una lista de aerolíneas vacía
+    if not terminal.airlines:
+        return False
+
+    # 3. Comprobar si la aerolínea está en la lista
+    if name in terminal.airlines:
+        return True
+    else:
+        return False

@@ -136,7 +136,7 @@ def PlotAirlines(aircrafts):
 
 def MapFlights(aircrafts, airports):
     '''Shows in Google Earth the trajectories of all flights in the list, from
-    origin airport to LEBL. Show in different colors the trajectories with origin
+    origin airport to LEBL.txt. Show in different colors the trajectories with origin
     in a Schengen country. Remember that Annex A explains how to draw lines in
     Google Earth.
     '''
@@ -167,7 +167,7 @@ def MapFlights(aircrafts, airports):
                 estilo = "#color_noschengen"
 
             fitxer.write(f'\t\t<Placemark>\n'
-                         f'\t\t\t<name>Vuelo {origen} - LEBL</name>\n'
+                         f'\t\t\t<name>Vuelo {origen} - LEBL.txt</name>\n'
                          f'\t\t\t<styleUrl>{estilo}</styleUrl>\n'
                          f'\t\t\t<LineString>\n'
                          f'\t\t\t\t<altitudeMode>clampToGround</altitudeMode>\n'
@@ -187,7 +187,7 @@ def MapFlights(aircrafts, airports):
 
 def LongDistanceArrivals(aircrafts,airports):
     '''Returns a list with the aircrafts from the input list of aircrafts that
-    arrive to LEBL from an airport that is more that 2000 Km away (this aircraft
+    arrive to LEBL.txt from an airport that is more that 2000 Km away (this aircraft
     would need special inspection after landing).
     You will need a function to compute the Haversine3 distance between two
     coordinates.
