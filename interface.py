@@ -232,13 +232,27 @@ def earth_vuelos():
 
 #Funcions V3
 def cargar_estructura():
+    archivo = filedialog.askopenfilename(
+        title="Seleccione un archivo",
+        filetypes=(("Archivos CSV", "*.txt"), ("Todos los archivos", "*.*"))
+    )
+    if not archivo:
+        return None
+    global bcn
+    bcn = LoadAirportStructure(archivo)
+    if bcn:
+        mostrar_puertas()
+    else:
+        messagebox.showerror("Error", "No se pudo cargar la estructura del aeropuerto.")
+
     return None
 def asignar_puertas():
-    if not aircrafts:
-        messagebox.showerror('Error', 'Listado de aviones vacío')
+    if not aircrafts or not bcn:
+        messagebox.showerror('Error', 'Listado de aviones vacío o falta estructura del aeropuerto')
     else:
-        for i in range (len(aeropuertos)):
-            AssignGates(bcn,aircrafts)
+        for i in range (len(aircrafts)):
+                AssignGate(bcn,aircrafts[i])
+        mostrar_puertas()
         return None
 def mostrar_ocupacion():
     return None
@@ -247,7 +261,10 @@ def mostrar_puertas():
     for j in range (len(bcn.terminals)):
         for i in range(len(bcn.terminals[j].Boarding_area)):
             for k in range(len(bcn.terminals[j].Boarding_area[i].Gate)):
-                listadopuertas.insert(tk.END, bcn.terminals[j].Boarding_area[i].Gate[k])
+                if bcn.terminals[j].Boarding_area[i].Gate[k].occupied:
+                    listadopuertas.insert(tk.END, f'{bcn.terminals[j].Boarding_area[i].Gate[k].name}\t\t({bcn.terminals[j].Boarding_area[i].area})\t\tOcupada por {bcn.terminals[j].Boarding_area[i].Gate[k].aircraft_id}')
+                else:
+                    listadopuertas.insert(tk.END,f'{bcn.terminals[j].Boarding_area[i].Gate[k].name}\t\t({bcn.terminals[j].Boarding_area[i].area})\t\tLibre')
     return None
 
 # ------ CONFIGURACION VENTANA ------

@@ -1,6 +1,3 @@
-
-
-
 from Aircraft import *
 
 class Barcelona_AP:
@@ -26,26 +23,31 @@ class Gate:
         self.aircraft_id = None
 
 def SetGate (area, init_gate, end_gate, prefix):
-    area.gates=[]
+    area.Gate=[]
+    '''
     for element in (init_gate, end_gate+1):
         if init_gate>=end_gate:
             return (-1)
         name= f"{prefix}{element}"
         new_gate = Gate(name)
-        area.gates.append(new_gate)
+        area.Gate.append(new_gate)'''
+    for i in range (int(init_gate), int(end_gate)+1):
+        name = f"{prefix}{i}"
+        new_gate = Gate(name)
+        area.Gate.append(new_gate)
 
 def LoadAirlines (terminal, t_name):
     nombre_archivo = f"{t_name}_Airlines.txt"
     try:
         fitxer = open(nombre_archivo, 'r')
-        terminal.icao_codes = []
+        terminal.ICAO = []
         for linea in fitxer:
             elementos = linea.split()
 
             if len(elementos) > 0:
                 codigo_icao = elementos[-1] #para coger la última palabra de la linea
 
-                terminal.icao_codes.append(codigo_icao)
+                terminal.ICAO.append(codigo_icao)
 
         fitxer.close()
 
@@ -61,15 +63,60 @@ def SearchTerminal (bcn, name):
     i = 0
     encontrado = False
     terminales = bcn.terminals
-    while not encontrado:
-        if IsAirlineInTerminal(terminals[i], name):
+    while not encontrado and i < len(terminales):
+        if IsAirlineInTerminal(terminales[i], name):
             encontrado = True
-        elif not IsAirlineInTerminal(terminals[i], name):
+        elif not IsAirlineInTerminal(terminales[i], name):
             i += 1
     if encontrado:
-        return terminales[i]
+        return terminales[i].name
     else:
         return ""
+
+def LoadAirportStructure(filename):
+    ''' Crea y devuelve un objeto BarcelonaAP leyendo la estructura del archivo.
+    Si el archivo no existe, devuelve None como código de error.
+    '''
+    try:
+        f = open(filename, 'r')
+        # leer la primera linea del archivo para extarer ICAO aeropuerto y nº terminales
+        linea = f.readline()
+        trozos = linea.split(' ')
+        # obtener ICAO aeropuerto
+        nombre_aeropuerto = trozos[0]
+        # creacion objeto de la clase BarcelonaAP con el ICAO obtenido
+        aeropuerto = Barcelona_AP(nombre_aeropuerto)
+        # obtencion lista terminales
+        terminales = []
+        for i in range(int(trozos[1])):
+            provTerminal = Terminal(f'T{i + 1}')
+            terminales.append(provTerminal)
+        # incluir temrinales en el objeto aeropuerto
+        aeropuerto.terminals = terminales
+        # cargar icaos de aerolineas para cada terminal
+        for i in range(len(aeropuerto.terminals)):
+            LoadAirlines(terminales[i], terminales[i].name)
+
+        # cargar boarding areas de cada terminal + asignar gates
+        linea = f.readline()
+        i = -1
+        while linea != '':
+            trozos = linea.split(' ')
+            if trozos[0] == 'Terminal':
+                i += 1
+            else:
+                provBoarding = Boarding_area(trozos[1], trozos[2])
+                SetGate(provBoarding, trozos[-3], trozos[-1], f'T{i + 1}BA{trozos[1]}')
+                aeropuerto.terminals[i].Boarding_area.append(provBoarding)
+            linea = f.readline()
+            
+        f.close()
+        return aeropuerto
+
+    except FileNotFoundError:
+        print(f"Error crítico: No se encontró el archivo '{filename}'.")
+        return None
+
 
 def AssignGate (bcn, aircraft):
     '''Given bcn of class BarcelonaAP and an aircraft of class Aircraft this function looks for the first gate that
@@ -86,8 +133,13 @@ def AssignGate (bcn, aircraft):
     find = False
     indiceTerminal = 0
     try:
+        if terminal == "":
+            print("Aerolínea no encontrada en las terminales.")
+            return None
+
+        # buscar si la terminal está en algún archivo
         while not find and indiceTerminal < len(terminales):
-            if terminal == terminales[indiceTerminal]:
+            if terminal == terminales[indiceTerminal].name:
                 find = True
             elif not find:
                 indiceTerminal += 1
@@ -107,12 +159,12 @@ def AssignGate (bcn, aircraft):
                     listBoardingAreas.append(bcn.terminals[indiceTerminal].Boarding_area[i])
 
         j = 0
-        gate = ""
+        gate = None
         encontrado = False
         while not encontrado and j < len(listBoardingAreas):
             k = 0
             while not encontrado and k < len(listBoardingAreas[j].Gate):
-                if listBoardingAreas[j].Gate[k].occupied == False:
+                if not listBoardingAreas[j].Gate[k].occupied:
                     encontrado = True
                     gate = listBoardingAreas[j].Gate[k]
                 elif not encontrado:
@@ -131,72 +183,6 @@ def AssignGate (bcn, aircraft):
         return None
 
 
-def LoadAirportStructure(filename):
-    ''' Crea y devuelve un objeto BarcelonaAP leyendo la estructura del archivo.
-    Si el archivo no existe, devuelve None como código de error.
-    '''
-    try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            # Leemos todas las líneas y quitamos las que estén en blanco
-            lines = [line.strip() for line in file if line.strip()]
-
-        if not lines:
-            return None
-
-        # 1. Leer la cabecera del aeropuerto (ej. "LEBL.txt 2 terminals")
-        header_parts = lines[0].split()
-        airport_code = header_parts[0]
-        airport = BarcelonaAP(airport_code)
-
-        # 2. Recorrer el resto del archivo para construir terminales y áreas
-        i = 1
-        while i < len(lines):
-            if lines[i].startswith("Terminal"):
-                # Ej: "Terminal T1 5 boarding areas"
-                parts = lines[i].split()
-                term_name = parts[1]
-                num_areas = int(parts[2])
-
-                current_terminal = Terminal(term_name)
-
-                # Cargar aerolíneas para esta terminal automáticamente (ej. "T1_Airlines.txt")
-                airline_file = f"{term_name}_Airlines.txt"
-                current_terminal.airlines = LoadAirlines(airline_file)
-
-                airport.terminals.append(current_terminal)
-                i += 1
-
-                # 3. Leer las áreas de embarque de esta terminal
-                for _ in range(num_areas):
-                    # Ej: "Area A Schengen Gates 1 - 11"
-                    # Índices: 0:Area, 1:A, 2:Schengen, 3:Gates, 4:1, 5:-, 6:11
-                    area_parts = lines[i].split()
-                    area_name = area_parts[1]
-                    area_type = area_parts[2]
-                    start_gate = int(area_parts[4])
-                    end_gate = int(area_parts[6])
-
-                    new_area = BoardingArea(area_name, area_type)
-
-                    # Generar el prefijo (Ej: T1 + BA + A + G -> "T1BAAG")
-                    prefix = f"{term_name}BA{area_name}G"
-
-                    # Llamar a SetGates para que genere las puertas 1 a 11
-                    SetGates(new_area, prefix, start_gate, end_gate)
-
-                    # Añadir el área a la terminal actual
-                    current_terminal.boarding_areas.append(new_area)
-                    i += 1
-            else:
-                i += 1  # Por si hay líneas basura, avanzar
-
-        return airport
-
-    except FileNotFoundError:
-        print(f"Error crítico: No se encontró el archivo '{filename}'.")
-        return None
-
-
 def GateOccupancy(bcn):
     ''' Given a BarcelonaAP object, returns a list of dictionaries with
     gate names, status, and aircraft id.
@@ -205,8 +191,8 @@ def GateOccupancy(bcn):
 
     # Recorremos la jerarquía completa: Aeropuerto -> Terminales -> Áreas -> Puertas
     for terminal in bcn.terminals:
-        for area in terminal.boarding_areas:
-            for gate in area.gates:
+        for area in terminal.Boarding_area:
+            for gate in area.Gate:
                 # Guardamos la info de forma estructurada
                 puerta_info = {
                     'terminal': terminal.name,
@@ -289,11 +275,11 @@ def IsAirlineInTerminal(terminal, name):
         return False
 
     # 2. Comprobar si la terminal tiene una lista de aerolíneas vacía
-    if not terminal.airlines:
+    if not terminal.ICAO:
         return False
 
     # 3. Comprobar si la aerolínea está en la lista
-    if name in terminal.airlines:
+    if name in terminal.ICAO:
         return True
     else:
         return False
