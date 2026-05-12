@@ -121,6 +121,8 @@ def AssignGate (bcn, aircraft):
             gate.occupied = True
             gate.aircraft_id = aircraft.id
         elif not encontrado:
-            return -1
+            print('No hay gates libres')
+            return None
     except IndexError:
-        return -2
+        print('Error error en el array')
+        return None

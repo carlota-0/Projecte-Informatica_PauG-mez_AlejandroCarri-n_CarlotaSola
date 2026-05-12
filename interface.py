@@ -12,6 +12,7 @@ import subprocess
 
 aircrafts = []
 aeropuertos = []
+bcn = None
 canvas = None
 
 # ------ FUNCIONES ------
@@ -234,15 +235,19 @@ def cargar_estructura():
     return None
 def asignar_puertas():
     if not aircrafts:
-        messagebox.showerror('Error', 'Listado de aeropuertos vacío')
+        messagebox.showerror('Error', 'Listado de aviones vacío')
     else:
+        for i in range (len(aeropuertos)):
+            AssignGates(bcn,aircrafts)
         return None
 def mostrar_ocupacion():
     return None
 def mostrar_puertas():
     listadopuertas.delete(0, 'end')
-    for i in range(len(aeropuertos)):
-        listadopuertas.insert(tk.END, None)
+    for j in range (len(bcn.terminals)):
+        for i in range(len(bcn.terminals[j].Boarding_area)):
+            for k in range(len(bcn.terminals[j].Boarding_area[i].Gate)):
+                listadopuertas.insert(tk.END, bcn.terminals[j].Boarding_area[i].Gate[k])
     return None
 
 # ------ CONFIGURACION VENTANA ------
