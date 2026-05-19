@@ -45,4 +45,7 @@ Aquesta versió del projecte permet treballar amb els vols que arriben a un aero
 :minidisc: El video de la versió 2 es pot trobar en aquest enllaç: [LINK](https://youtu.be/SSS_t_f-p4k)
 
 - [ ] <int>VERSIÓ 3:</ins>
+Aquesta versió del projecte permet tractar els vols tenint en compte les seves terminals d'arribada i sortida i la seva assignació de portes.
+     - Carregar l'arxiu .txt amb les portes d'embarcament i se li assigna un nom a cada porta
+     - 
 - [ ] <int>VERSIÓ 4:</ins>
