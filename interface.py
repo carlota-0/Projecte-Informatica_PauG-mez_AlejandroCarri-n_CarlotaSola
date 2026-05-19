@@ -255,6 +255,23 @@ def asignar_puertas():
         mostrar_puertas()
         return None
 def mostrar_ocupacion():
+    '''
+    global canvas, canvas_graficos
+    fig = PlotGateOccupancy(GateOccupancy(bcn))
+    fig.set_size_inches(1, 1)
+    fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.10)
+    # fig.tight_layout()
+
+    canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
+
+    if 'canvas_graficos' in globals():
+        canvas_graficos.grid_forget()
+    canvas_graficos = canvas.get_tk_widget()
+    canvas_graficos.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W, padx=15, pady=15)
+    # canvas_graficos.grid(row = 0, column = 0, padx = 15, pady = 15)
+
+    canvas.draw()
+    '''
     return None
 def mostrar_puertas():
     listadopuertas.delete(0, 'end')
@@ -495,10 +512,10 @@ boton_estructura.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S 
 
 boton_asignarpuerta = tk.Button(frame_puertas, text="Asignar puerta a cada vuelo", command=asignar_puertas)
 boton_asignarpuerta.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
-
+'''
 boton_mostrarocupacion = tk.Button(frame_puertas, text="Mostrar ocupación puertas", command=mostrar_ocupacion)
 boton_mostrarocupacion.grid(row = 0, column = 1, padx=5, pady=5, rowspan=2, sticky = tk.N + tk.S + tk.E + tk.W)
-
+'''
 # ------ FRAME LISTADO PUERTAS ------
 
 frame_listadopuertas = tk.LabelFrame(frame_v3, text="Listado puertas")
