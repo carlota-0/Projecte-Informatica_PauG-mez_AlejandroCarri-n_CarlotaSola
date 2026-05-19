@@ -15,7 +15,7 @@ Els integrants d'aquest grup som: Alejandro Carrión, Pau Gómez i Carlota Sola
     </td>
   </tr>
   <tr>
-    <td align="center"><b>Pau Gomez</b></td>
+    <td align="center"><b>Pau Gómez</b></td>
     <td align="center"><b>Carlota Sola</b></td>
     <td align="center"><b>Alejandro Carrión</b></td>
   </tr>
@@ -24,7 +24,7 @@ Els integrants d'aquest grup som: Alejandro Carrión, Pau Gómez i Carlota Sola
 
 ## SEGUIMENT DE LES VERSIONS
 
-- [x] VERSIÓ 1:
+- [x] <int>VERSIÓ 1:</ins>
   Aquesta versió permet treballar amb un llistat d'aeroports amb les següents funcions:
 
      - Afegir i suprimir manualment aeroports
@@ -32,9 +32,20 @@ Els integrants d'aquest grup som: Alejandro Carrión, Pau Gómez i Carlota Sola
      - Visualitzar els aeroports Schengen i no Schengen en un gràfic
      - Mostrar les ubicacions a Google Earth
 
-:minidisc: El video de la versió 1 es pot trobar en aquest enllaç: https://youtu.be/k-dcjhjiJaI
-- [x] VERSIÓ 2:
+:minidisc: El video de la versió 1 es pot trobar en aquest enllaç: [LINK](https://youtu.be/k-dcjhjiJaI)
+- [x] <int>VERSIÓ 2:</ins>
+Aquesta versió del projecte permet treballar amb els vols que arriben a un aeroport durant el dia amb les següents funcions:
 
-:minidisc: El video de la versió 2 es pot trobar en aquest enllaç:
-- [ ] VERSIÓ 3:
-- [ ] VERSIÓ 4:
+     - Carregar l'arxiu .txt dels vols
+     - Mostrar un gràfic amb els vols que venen segons la seva campanyia o segons l'hora en la que arriben
+     - Mostrar un grafic dels vols que venen segons si venen d'una zona Schengen o no
+     - Mostrar a Google Earth la trajectoria de cada vol desde el seu punt de partida fins al seu destí
+     - Mostrar a Google Earth la trajectoria dels vols de llarga distancia (+2000Km)
+  
+:minidisc: El video de la versió 2 es pot trobar en aquest enllaç: [LINK](https://youtu.be/SSS_t_f-p4k)
+
+- [ ] <int>VERSIÓ 3:</ins>
+Aquesta versió del projecte permet tractar els vols tenint en compte les seves terminals d'arribada i sortida i la seva assignació de portes.
+     - Carregar l'arxiu .txt amb les portes d'embarcament i se li assigna un nom a cada porta
+     - 
+- [ ] <int>VERSIÓ 4:</ins>
