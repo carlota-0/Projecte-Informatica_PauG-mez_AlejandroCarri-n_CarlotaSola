@@ -155,7 +155,7 @@ def AssignGate (bcn, aircraft):
                     listBoardingAreas.append(bcn.terminals[indiceTerminal].Boarding_area[i])
         elif not Schengen:
             for i in range (num):
-                if bcn.terminals[indiceTerminal].Boarding_area[i].area == "NoSchengen" :
+                if bcn.terminals[indiceTerminal].Boarding_area[i].area == "non-Schengen" :
                     listBoardingAreas.append(bcn.terminals[indiceTerminal].Boarding_area[i])
 
         j = 0
