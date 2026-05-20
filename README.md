@@ -49,5 +49,5 @@ Aquesta versió del projecte permet tractar els vols tenint en compte les seves 
      - Carregar l'arxiu .txt amb l'estructura de l'aeroport
      - Se li asigna una porta d'embarcament a cada vol en l'aeroport tractat
        
-:minidisc: El video de la versió 1 es pot trobar en aquest enllaç: [LINK](https://youtu.be/k-dcjhjiJaI)
+:minidisc: El video de la versió 3 es pot trobar en aquest enllaç: [LINK](https://youtu.be/r30GyUsZ6rc)
 - [ ] <int>VERSIÓ 4:</ins>
