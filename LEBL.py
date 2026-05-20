@@ -283,3 +283,15 @@ def IsAirlineInTerminal(terminal, name):
         return True
     else:
         return False
+
+
+
+def AssignNightGates (bcn, aircrafts): #[Pau]
+    ''' This function receives an object of class BarcelonaAP, bcn, and a list of
+    aircraft. It assigns a gate to each of the aircraft in the list. Use the new
+    version of function AssignGate. Check that the aircrafts in the list are only
+    departure flights, with empty data related to arrival. In case an aircraft
+    does not meet the condition then skip to the following aircraft in list. If
+    the input list is empty return an error code.
+    '''
+    return None

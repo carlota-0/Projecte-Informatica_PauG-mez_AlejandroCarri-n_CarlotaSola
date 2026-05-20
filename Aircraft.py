@@ -231,6 +231,17 @@ def LongDistanceArrivals(aircrafts,airports):
 
     return largaDistancia
 
+def MergeMovements (arrivals, departures): #[Pau]
+    ''' This function receives two lists of aircraft (arrivals and departures) and
+    returns a new list of aircrafts in which the data of the aircraft with the
+    same id and with compatible times are merged into the same Aircraft structure.
+    Times are compatible when the arrival time is previous to the departure time.
+    Remember that some aircrafts may not have a departure and others may not have
+    an arrival in the day (night aircraft). If some of the input lists is empty an
+    error code shall be returned. IMPORTANT: an aircraft can land and take-off
+    more than once at LEBL during the same day.
+    '''
+    return None
 
 # Gràfic TOP 5 aerolinies més significatives
 ''' 
