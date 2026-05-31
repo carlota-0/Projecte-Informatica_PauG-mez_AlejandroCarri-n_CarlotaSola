@@ -285,6 +285,66 @@ def IsAirlineInTerminal(terminal, name):
         return False
 
 
+# ==========================================
+#         FUNCIONES DE LA VERSIÓN 4
+# ==========================================
+
+def NightAircraft(aircrafts):
+    """
+    Recibe una lista de aviones y devuelve una nueva lista con los aviones "pernoctadores"
+    (aquellos que NO tienen datos de llegada, pero SÍ tienen datos de salida).
+    Si la lista de entrada está vacía, devuelve un código de error (por ejemplo, -1).
+    """
+    if not aircrafts:
+        print("Error: La lista de aeronaves está vacía.")
+        return -1
+
+    night_list = []
+    for ac in aircrafts:
+        # Un avión pernoctó si no tiene origen/hora de llegada, pero sí tiene destino/salida
+        # Ajusta 'origin_airport' y 'destination_airport' según los nombres exactos de tu clase Aircraft
+        tiene_llegada = hasattr(ac, 'origin_airport') and ac.origin_airport != ""
+        tiene_salida = hasattr(ac, 'destination_airport') and ac.destination_airport != ""
+
+        if tiene_salida and not tiene_llegada:
+            night_list.append(ac)
+
+    return night_list
+
+
+def FreeGate(bcn, aircraft_id):
+    """
+    Busca un avión por su ID en todas las puertas del aeropuerto bcn.
+    Si lo encuentra, libera la puerta (occupied = False, aircraft_id = "") y termina.
+    """
+    found = False
+
+    # Recorremos usando TUS nombres exactos de variables: terminals -> Boarding_area -> Gate
+    for terminal in bcn.terminals:
+        for area in terminal.Boarding_area:  # <--- Cambiado a tu formato
+            for gate in area.Gate:  # <--- Cambiado a tu formato
+                # Nota: Si en tu clase Gate, 'occupied' o 'aircraft_id' van en mayúsculas,
+                # cámbialos aquí abajo también (ej: gate.Occupied o gate.Aircraft_id)
+                if hasattr(gate, 'occupied') and gate.occupied and getattr(gate, 'aircraft_id', '') == aircraft_id:
+                    gate.occupied = False
+                    gate.aircraft_id = ""
+                    found = True
+                    break
+                elif hasattr(gate, 'Occupied') and gate.Occupied and getattr(gate, 'Aircraft_id', '') == aircraft_id:
+                    gate.Occupied = False
+                    gate.Aircraft_id = ""
+                    found = True
+                    break
+            if found: break
+        if found: break
+
+    if not found:
+        print(f"Error: El avión {aircraft_id} no se encontró en ninguna puerta.")
+        return -1
+
+    return 0  # Éxito
+
+
 
 def AssignNightGates (bcn, aircrafts): #[Pau]
     ''' This function receives an object of class BarcelonaAP, bcn, and a list of
