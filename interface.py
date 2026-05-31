@@ -254,25 +254,6 @@ def asignar_puertas():
                 AssignGate(bcn,aircrafts[i])
         mostrar_puertas()
         return None
-def mostrar_ocupacion():
-    '''
-    global canvas, canvas_graficos
-    fig = PlotGateOccupancy(GateOccupancy(bcn))
-    fig.set_size_inches(1, 1)
-    fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.10)
-    # fig.tight_layout()
-
-    canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
-
-    if 'canvas_graficos' in globals():
-        canvas_graficos.grid_forget()
-    canvas_graficos = canvas.get_tk_widget()
-    canvas_graficos.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W, padx=15, pady=15)
-    # canvas_graficos.grid(row = 0, column = 0, padx = 15, pady = 15)
-
-    canvas.draw()
-    '''
-    return None
 def mostrar_puertas():
     listadopuertas.delete(0, 'end')
     for j in range (len(bcn.terminals)):
@@ -758,7 +739,7 @@ hscrollbar.config(command=listadopuertas.xview)
 
 # ------ v4 --------
 boton_grafico_v4 = tk.Button(frame_puertas, text="Gráfico Ocupación 24h (V4)", command=lambda: PlotDayOccupancy(bcn, aircrafts))
-boton_grafico_v4.grid(row=0, column=2, padx=5, pady=5, rowspan=2, sticky=tk.N + tk.S + tk.E + tk.W)
+boton_grafico_v4.grid(row=0, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 boton_mapa_interactivo = tk.Button(frame_puertas, text="Ver Mapa Puertas Ocupadas (Slider)", command=lambda: MostrarMapaInteractivo(bcn, aircrafts))
 # Lo colocamos en la columna 1, debajo del botón de mostrar ocupación
