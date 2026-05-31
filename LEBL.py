@@ -1,9 +1,11 @@
 from Aircraft import *
 
+
 class Barcelona_AP:
     def __init__(self, code):
         self.code = code
         self.terminals = []
+
 class Terminal:
     def __init__(self, name):
         self.name = name
@@ -11,19 +13,19 @@ class Terminal:
         self.Boarding_area = []
 
 class Boarding_area:
-    def __init__(self,name, area):
+    def __init__(self, name, area):
         self.name = name
         self.area = area
         self.Gate = []
 
 class Gate:
-    def __init__(self,name):    #comencem només amb això perquè la demés informació podria estar buida si no hi ha avió.
+    def __init__(self, name):  # comencem només amb això perquè la demés informació podria estar buida si no hi ha avió.
         self.name = name
         self.occupied = False
         self.aircraft_id = None
 
-def SetGate (area, init_gate, end_gate, prefix):
-    area.Gate=[]
+def SetGate(area, init_gate, end_gate, prefix):
+    area.Gate = []
     '''
     for element in (init_gate, end_gate+1):
         if init_gate>=end_gate:
@@ -31,12 +33,13 @@ def SetGate (area, init_gate, end_gate, prefix):
         name= f"{prefix}{element}"
         new_gate = Gate(name)
         area.Gate.append(new_gate)'''
-    for i in range (int(init_gate), int(end_gate)+1):
+    for i in range(int(init_gate), int(end_gate) + 1):
         name = f"{prefix}{i}"
         new_gate = Gate(name)
         area.Gate.append(new_gate)
 
-def LoadAirlines (terminal, t_name):
+
+def LoadAirlines(terminal, t_name):
     nombre_archivo = f"{t_name}_Airlines.txt"
     try:
         fitxer = open(nombre_archivo, 'r')
@@ -45,7 +48,7 @@ def LoadAirlines (terminal, t_name):
             elementos = linea.split()
 
             if len(elementos) > 0:
-                codigo_icao = elementos[-1] #para coger la última palabra de la linea
+                codigo_icao = elementos[-1]  # para coger la última palabra de la linea
 
                 terminal.ICAO.append(codigo_icao)
 
@@ -54,7 +57,8 @@ def LoadAirlines (terminal, t_name):
     except FileNotFoundError:
         return [-1]
 
-def SearchTerminal (bcn, name):
+
+def SearchTerminal(bcn, name):
     ''' Given bcn of class BarcelonaAP and the name of one airline, this function
     returns the name of the terminal where the airline must board its passengers.
     Use function IsAirlineInTerminal. If the airline is not found in any of the
@@ -72,6 +76,7 @@ def SearchTerminal (bcn, name):
         return terminales[i].name
     else:
         return ""
+
 
 def LoadAirportStructure(filename):
     ''' Crea y devuelve un objeto BarcelonaAP leyendo la estructura del archivo.
@@ -109,7 +114,7 @@ def LoadAirportStructure(filename):
                 SetGate(provBoarding, trozos[-3], trozos[-1], f'T{i + 1}BA{trozos[1]}')
                 aeropuerto.terminals[i].Boarding_area.append(provBoarding)
             linea = f.readline()
-            
+
         f.close()
         return aeropuerto
 
@@ -118,7 +123,7 @@ def LoadAirportStructure(filename):
         return None
 
 
-def AssignGate (bcn, aircraft):
+def AssignGate(bcn, aircraft):
     '''Given bcn of class BarcelonaAP and an aircraft of class Aircraft this function looks for the first gate that
     is not occupied in the correct boarding area. To decide the correct boarding area the function must check the
     airlineterminal assignment (using the SearchTerminal function defined above) and the Schengen/non-Schengen type
@@ -144,18 +149,17 @@ def AssignGate (bcn, aircraft):
             elif not find:
                 indiceTerminal += 1
 
-
         origen = aircraft.origin_airport
         Schengen = IsSchengenAirport(origen)
         num = len(bcn.terminals[indiceTerminal].Boarding_area)
         listBoardingAreas = []
         if Schengen:
-            for i in range (num):
-                if bcn.terminals[indiceTerminal].Boarding_area[i].area == "Schengen" :
+            for i in range(num):
+                if bcn.terminals[indiceTerminal].Boarding_area[i].area == "Schengen":
                     listBoardingAreas.append(bcn.terminals[indiceTerminal].Boarding_area[i])
         elif not Schengen:
-            for i in range (num):
-                if bcn.terminals[indiceTerminal].Boarding_area[i].area == "non-Schengen" :
+            for i in range(num):
+                if bcn.terminals[indiceTerminal].Boarding_area[i].area == "non-Schengen":
                     listBoardingAreas.append(bcn.terminals[indiceTerminal].Boarding_area[i])
 
         j = 0
@@ -175,6 +179,7 @@ def AssignGate (bcn, aircraft):
         if encontrado:
             gate.occupied = True
             gate.aircraft_id = aircraft.id
+            return True
         elif not encontrado:
             print('No hay gates libres')
             return None
@@ -264,6 +269,8 @@ def PlotGateOccupancy(occupancy_list):
     plt.grid(axis='x', linestyle='--', alpha=0.4)  # Cuadrícula vertical para guiarse mejor
     plt.tight_layout()
     plt.show()
+
+
 def IsAirlineInTerminal(terminal, name):
     ''' Given terminal of class Terminal and the name of one airline, this
     function returns True if the airline is in the list of airlines boarding in
@@ -345,8 +352,7 @@ def FreeGate(bcn, aircraft_id):
     return 0  # Éxito
 
 
-
-def AssignNightGates (bcn, aircrafts): #[Pau]
+def AssignNightGates(bcn, aircrafts):  # [Pau]
     ''' This function receives an object of class BarcelonaAP, bcn, and a list of
     aircraft. It assigns a gate to each of the aircraft in the list. Use the new
     version of function AssignGate. Check that the aircrafts in the list are only
@@ -355,3 +361,41 @@ def AssignNightGates (bcn, aircrafts): #[Pau]
     the input list is empty return an error code.
     '''
     return None
+
+
+def AssignGatesAtTime(bcn, aircrafts, time):
+    '''This function receives an object of class BarcelonaAP, bcn, and a list of aircraft. It assigns a gate
+    to each of the aircraft in the list. Use the new version of function AssignGate. Check that the aircrafts
+    in the list are only departure flights, with empty data related to arrival. In case an aircraft does not
+    meet the condition then skip to the following aircraft in list. If the input list is empty return an error code.'''
+
+    unassigned_count = 0
+    current_hour = time.split(':')[0]  # Extrau "14" de "14:00", per exemple
+
+    # Primer
+    for terminal in bcn.terminals:
+        for area in terminal.Boarding_area:
+            for gate in area.Gate:
+                if gate.occupied:
+                    # Trobem l'avió que ocupa la porta
+                    for ac in aircrafts:
+                        if ac.id == gate.aircraft_id:
+                            # Si la hora de "departure" ja ha passat
+                            if ac.time_of_departure != "" and ac.time_of_departure <= time:
+                                gate.occupied = False
+                                gate.aircraft_id = ""
+                            break  # Seguim amb la següent porta
+
+    # Asignem portes en els trams de 1h
+    for ac in aircrafts:
+        if ac.time_of_landing != "":
+            ac_hour = ac.time_of_landing.split(':')[0]
+
+            # Si el nou avuió d'arribada està en el tram que estem tractan...
+            if ac_hour == current_hour:
+                success = AssignGate(bcn, ac)
+
+                if success is None:
+                    unassigned_count += 1
+
+    return unassigned_count

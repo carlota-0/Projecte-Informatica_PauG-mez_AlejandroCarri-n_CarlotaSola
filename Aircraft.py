@@ -2,14 +2,16 @@ import math
 from airport import *
 
 class Aircraft:
-    def __init__(self, id, company, origin_airport, time_of_landing):
-        self.id=id
-        self.company=company
-        self.origin_airport=origin_airport
-        self.time_of_landing=time_of_landing
+    def __init__(self, id, company, origin_airport="", time_of_landing="", destination_airport="", time_of_departure=""):
+        self.id = id
+        self.company = company
+        self.origin_airport = origin_airport
+        self.time_of_landing = time_of_landing
+        self.destination_airport = destination_airport
+        self.time_of_departure = time_of_departure
 
-def __repr__(self):
-    return f"[{self.id} - {self.company} - {self.origin_airport} - {self.time_of_landing}]"
+    def __repr__(self):
+        return f"[{self.id} - {self.company} - {self.origin_airport} - {self.time_of_landing} - {self.destination_airport} - {self.time_of_departure}]"
 
 def LoadArrivals (filename):
     Arrivals = []
@@ -31,6 +33,37 @@ def LoadArrivals (filename):
     except FileNotFoundError:
         return []
     return Arrivals
+
+def LoadDepartures(filename):
+    Departures = []
+    try:
+        fitxer = open(filename, 'r')
+        fitxer.readline()  # Skip the header line
+        linea = fitxer.readline()
+
+        while linea != '':
+            elements = linea.split()
+
+            # Comprobamos que la línea tiene al menos 4 datos antes de leer
+            if len(elements) >= 4:
+                id = str(elements[0])
+                destination_airport = str(elements[1])
+                time_of_departure = str(elements[2])
+                company = str(elements[3])
+
+                # Initialize the aircraft leaving the arrival parameters empty
+                informacion = Aircraft(id, company, origin_airport="", time_of_landing="",
+                                       destination_airport=destination_airport, time_of_departure=time_of_departure)
+                Departures.append(informacion)
+
+            linea = fitxer.readline()
+
+        fitxer.close()
+
+    except FileNotFoundError:
+        return []
+
+    return Departures
 
 def SaveFlights(aircrafts, filename):
     fitxer = open(filename, 'w')
@@ -311,6 +344,3 @@ def PlotAirlinesSignificatives(aircrafts):
 '''
 
 # test section
-if __name__ == "__main__":
-    aircrafts = LoadArrivals ("Arrivals.txt")
-    PlotArrivals (aircrafts)
