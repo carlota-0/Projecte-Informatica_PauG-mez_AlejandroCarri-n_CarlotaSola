@@ -313,7 +313,7 @@ def PlotDayOccupancy(bcn, aircrafts):
     for name, datos_hora in ocupacion_por_terminal.items():
         ax.plot(horas, datos_hora, marker='o', label=f"Ocupación {name}")
 
-    ax.set_xticklabels(horas, rotation=45)
+
     ax.set_xlabel("Hora del día")
     ax.set_ylabel("Puertas Ocupadas")
     ax.set_title("Ocupación Dinámica del Aeropuerto (V4)")
