@@ -47,9 +47,11 @@ def suprimir():
     #eliminar un aeropuerto de la lista
     if entry_icao.get() != "":
         spr_icao = entry_icao.get()
-        RemoveAirport(aeropuertos,spr_icao)
-        mostrar_aeropuertos()
-        limpiar_formulario()
+        if RemoveAirport(aeropuertos, spr_icao) is None:
+            messagebox.showerror('Error', 'Aeropuerto no encontrado')
+        else:
+            mostrar_aeropuertos()
+            limpiar_formulario()
     else:
         messagebox.showerror('Error','Falta el ICAO del aeropuerto a eliminar')
 def importar_archivo():
@@ -108,7 +110,9 @@ def map_airports():
     #mostrar aeropuertos en Google Earth
     if aeropuertos:
         try:
-            MapAirports(aeropuertos)
+            if not MapAirports(aeropuertos):
+                messagebox.showerror('Error', 'No se pudo crear el archivo KML')
+                return
 
             archivo = "Ubicaciones.kml"
             if sys.platform == "win32":
@@ -214,14 +218,17 @@ def fusionar_movimientos():
 
 def exportar_vuelos():
     #exportar vuelos a un archivo
-    archivo = filedialog.askopenfilename(
+    archivo = filedialog.asksaveasfilename(
         title="Seleccione un archivo .txt",
+        defaultextension=".txt",
         filetypes=(("Archivos de texto","*.txt"), ("Todos los archivos", "*.*"))
     )
-    try:
-        SaveFlights(aircrafts,archivo)
-    except FileNotFoundError:
-        messagebox.showerror('Error', 'No se ha seleccionado ningún archivo')
+    if not archivo:
+        return
+    if SaveFlights(aircrafts, archivo):
+        messagebox.showinfo('Exportar', f'Vuelos guardados en {archivo}')
+    else:
+        messagebox.showerror('Error', 'No se pudo guardar el archivo')
 def grafico_vuelosSchengen():
     #mostrar gráfico de vuelos Schengen/No-Schengen
     if aircrafts:
@@ -243,25 +250,95 @@ def grafico_vuelosSchengen():
     else:
         messagebox.showerror('Error','La lista de vuelos está vacía')
 def grafico_vuelosPorCompania():
-    #mostrar gráfico de vuelos por compañía
-    if aircrafts:
-        global canvas, canvas_graficos
-        fig = PlotAirlines(aircrafts)
-        fig.set_size_inches(1, 1)
-        fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.10)
-        # fig.tight_layout()
-
-        canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
-
-        if 'canvas_graficos' in globals():
-            canvas_graficos.grid_forget()
-        canvas_graficos = canvas.get_tk_widget()
-        canvas_graficos.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W, padx=15, pady=15)
-        # canvas_graficos.grid(row = 0, column = 0, padx = 15, pady = 15)
-
-        canvas.draw()
-    else:
+    #mostrar gráfico de vuelos por compañía con opciones
+    if not aircrafts:
         messagebox.showerror('Error','La lista de vuelos está vacía')
+        return
+
+    # --- pop-up para elegir modo ---
+    top = tk.Toplevel(window)
+    top.title("Tipo de gráfico")
+    top.geometry("300x150")
+    top.transient(window)
+    top.grab_set()
+
+    tk.Label(top, text="¿Qué gráfico desea?", font=("Arial", 11, "bold")).pack(pady=10)
+
+    def elegir_top5():
+        top.destroy()
+        fig = PlotAirlinesSignificatives(aircrafts)
+        mostrar_figura(fig)
+
+    def elegir_seleccion():
+        top.destroy()
+        # --- pop-up de selección múltiple de aerolíneas ---
+        aerolineas = sorted(set(ac.company for ac in aircrafts))
+
+        sel = tk.Toplevel(window)
+        sel.title("Seleccionar aerolíneas")
+        sel.geometry("300x450")
+        sel.transient(window)
+        sel.grab_set()
+
+        tk.Label(sel, text="Seleccione aerolíneas:", font=("Arial", 10, "bold")).pack(pady=(5, 0))
+
+        busqueda_var = tk.StringVar()
+        entry_busqueda = tk.Entry(sel, textvariable=busqueda_var, font=("Arial", 10))
+        entry_busqueda.pack(fill=tk.X, padx=10, pady=5)
+        entry_busqueda.focus_set()
+
+        frame = tk.Frame(sel)
+        frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        scrollbar = tk.Scrollbar(frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        listbox = tk.Listbox(frame, selectmode=tk.MULTIPLE, yscrollcommand=scrollbar.set, font=("Courier", 10))
+        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=listbox.yview)
+
+        def actualizar_lista(*args):
+            filtro = busqueda_var.get().lower()
+            listbox.delete(0, tk.END)
+            for a in aerolineas:
+                if filtro in a.lower():
+                    listbox.insert(tk.END, a)
+
+        busqueda_var.trace_add("write", actualizar_lista)
+        actualizar_lista()
+
+        def confirmar():
+            seleccionadas = [listbox.get(i) for i in listbox.curselection()]
+            if not seleccionadas:
+                messagebox.showerror("Error", "Debe seleccionar al menos una aerolínea")
+                return
+            sel.destroy()
+            # preguntar si mostrar columna "Otras"
+            if messagebox.askyesno("Resto de vuelos", "¿Mostrar columna con el resto de vuelos?"):
+                fig = PlotAirlinesFiltered(aircrafts, seleccionadas, True)
+            else:
+                fig = PlotAirlinesFiltered(aircrafts, seleccionadas, False)
+            mostrar_figura(fig)
+
+        tk.Button(sel, text="Aceptar", command=confirmar, width=15).pack(pady=10)
+
+    tk.Button(top, text="Top 5 aerolíneas + Otras", command=elegir_top5, width=25).pack(pady=5)
+    tk.Button(top, text="Seleccionar aerolíneas", command=elegir_seleccion, width=25).pack(pady=5)
+
+def mostrar_figura(fig):
+    #mostrar figura en el frame de gráficos
+    global canvas, canvas_graficos
+    fig.set_size_inches(1, 1)
+    fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.10)
+
+    canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
+
+    if 'canvas_graficos' in globals():
+        canvas_graficos.grid_forget()
+    canvas_graficos = canvas.get_tk_widget()
+    canvas_graficos.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W, padx=15, pady=15)
+
+    canvas.draw()
 def grafico_vuelosPorLlegada():
     #mostrar gráfico de vuelos por hora de llegada
     if aircrafts:
@@ -293,7 +370,7 @@ def earth_largaDistancia():
                 os.startfile(archivo)
             elif sys.platform == "darwin":
                 subprocess.call(["open", archivo])
-        except:
+        except (OSError, subprocess.SubprocessError):
             messagebox.showerror('Error','No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Vuelos.kml\"')
     else:
         messagebox.showerror('Error', 'Faltan los datos de los vuelos, los datos de los aeropuertos o ambos')
@@ -335,12 +412,17 @@ def asignar_puertas():
     if not aircrafts or not bcn:
         messagebox.showerror('Error', 'Listado de aviones vacío o falta estructura del aeropuerto')
     else:
+        asignadas = 0
         for i in range (len(aircrafts)):
-                AssignGate(bcn,aircrafts[i])
+            if AssignGate(bcn, aircrafts[i]) is not None:
+                asignadas += 1
         mostrar_puertas()
+        messagebox.showinfo('Puertas asignadas', f'{asignadas} de {len(aircrafts)} vuelos tienen puerta asignada')
         return None
 def mostrar_puertas():
     #mostrar estado de las puertas en el listado
+    if bcn is None:
+        return
     listadopuertas.delete(0, 'end')
     for j in range (len(bcn.terminals)):
         for i in range(len(bcn.terminals[j].Boarding_area)):
@@ -422,6 +504,9 @@ def MostrarMapaInteractivo(bcn, aircrafts):
         from tkinter import messagebox
         messagebox.showerror('Error', 'Primero debes cargar el aeropuerto y los vuelos.')
         return
+    if not bcn.terminals:
+        messagebox.showerror('Error', 'El aeropuerto no tiene terminales cargadas.')
+        return
 
     # =========================================================================
     # ⏱️ PRECALCULAR TODO EL DÍA MINUTO A MINUTO (Simulación limpia)
@@ -430,8 +515,8 @@ def MostrarMapaInteractivo(bcn, aircrafts):
 
     # Vaciamos por completo el aeropuerto para empezar desde cero absoluto
     for t in bcn_simulado.terminals:
-        for area in t.Boarding_area:
-            for g in area.Gate:
+        for area in getattr(t, 'Boarding_area', []):
+            for g in getattr(area, 'Gate', []):
                 g.occupied = False
                 g.aircraft_id = None
 
@@ -481,13 +566,13 @@ def MostrarMapaInteractivo(bcn, aircrafts):
 
         # Filtramos por la terminal que el usuario tenga seleccionada
         t_obj = next((t for t in bcn_instante.terminals if t.name == terminal_actual), bcn_instante.terminals[0])
-        lista_areas = t_obj.Boarding_area
+        lista_areas = getattr(t_obj, 'Boarding_area', [])
 
         # Organizamos las filas visuales de 18 en 18 para que quepa en pantalla
         total_filas_necesarias = 0
         filas_por_area = []
         for area in lista_areas:
-            num_puertas = len(area.Gate)
+            num_puertas = len(getattr(area, 'Gate', []))
             filas_este_area = ((num_puertas - 1) // 18) + 1 if num_puertas > 0 else 1
             filas_por_area.append(filas_este_area)
             total_filas_necesarias += filas_este_area
@@ -500,14 +585,14 @@ def MostrarMapaInteractivo(bcn, aircrafts):
 
         # Dibujamos los bloques correspondientes
         for i, area in enumerate(lista_areas):
-            nombre_area = area.name.strip()
+            nombre_area = str(getattr(area, 'name', f'Area {i+1}')).strip()
             num_filas_area = filas_por_area[i]
 
             y_centro_etiqueta = (fila_actual_global - (num_filas_area - 1) / 2) * 1.4
             ax.text(-0.6, y_centro_etiqueta + 0.2, f"Área {nombre_area}", ha='right', va='center', fontsize=10,
                     fontweight='bold', color='#1a5f7a')
 
-            for j, gate in enumerate(area.Gate):
+            for j, gate in enumerate(getattr(area, 'Gate', [])):
                 subfila_dentro_area = j // 18
                 columna = j % 18
 
@@ -515,15 +600,19 @@ def MostrarMapaInteractivo(bcn, aircrafts):
                 x_pos = columna * 1.15
                 y_pos = fila_render * 1.4
 
-                color = '#dc2626' if gate.occupied else '#10b981'
+                ocupado = getattr(gate, 'occupied', False) or getattr(gate, 'Occupied', False)
+                ac_id = getattr(gate, 'aircraft_id', None) or getattr(gate, 'Aircraft_id', None)
+                gate_name = str(getattr(gate, 'name', f'G{j+1}'))
+
+                color = '#dc2626' if ocupado else '#10b981'
                 rect = patches.Rectangle((x_pos, y_pos), 0.95, 0.6, linewidth=1, facecolor=color, edgecolor='white')
                 ax.add_patch(rect)
 
-                if gate.occupied and gate.aircraft_id:
-                    ax.text(x_pos + 0.47, y_pos + 0.3, str(gate.aircraft_id)[:5], ha='center', va='center', fontsize=6,
+                if ocupado and ac_id:
+                    ax.text(x_pos + 0.47, y_pos + 0.3, str(ac_id)[:5], ha='center', va='center', fontsize=6,
                             color='white', fontweight='bold', rotation=30)
                 else:
-                    num_limpio = gate.name.split('G')[-1] if 'G' in gate.name else str(j + 1)
+                    num_limpio = gate_name.split('G')[-1] if 'G' in gate_name else str(j + 1)
                     ax.text(x_pos + 0.47, y_pos + 0.3, num_limpio, ha='center', va='center', fontsize=7, color='white',
                             alpha=0.8)
 

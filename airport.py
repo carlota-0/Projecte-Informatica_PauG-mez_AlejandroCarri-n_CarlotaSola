@@ -24,6 +24,8 @@ def IsSchengenAirport (code):
     Schengen country, and False otherwise. If the input parameter is empty then
     False is returned.'''
     # se define un lisrado con todos los códigos de la zona Schengen y se hace una búsqueda de los dos primeros caracteres del ICAO del aeropuerto dentro de este listado de códigos
+    if code is None or code == "":
+        return False
     codigos = ['LO', 'EB', 'LK', 'LC', 'EK', 'EE', 'EF', 'LF', 'ED', 'LG', 'EH', 'LH', 'BI','LI', 'EV', 'EY', 'EL', 'LM', 'EN', 'EP', 'LP', 'LZ', 'LJ', 'LE', 'ES', 'LS']
     encontrado = False
     i = 0
@@ -67,22 +69,23 @@ def LoadAirports (filename):
         linia = fitxer.readline()
         while linia != "":
             elements = linia.split()
-            #obetener el ICAO
-            icao = str(elements[0])
-            #pasar las coordenadas de horas minutos y segundos a decimal con un redondeo de dos decimales
-            lat = round(float(elements[1][-2:])/3600 + float(elements[1][-4:-2])/60 + float(elements[1][1:-4]),2)
-            lon = round(float(elements[2][-2:])/3600 + float(elements[2][-4:-2])/60 + float(elements[2][1:-4]),2)
-            #definir signo de la latitud
-            if elements[1][0] == "S":
-                lat = -1*lat
-            # definir signo de la longitud
-            if elements[2][0] == "W":
-                lon = -1*lon
-            #definir un objeto provisional con las características del aeropuerto que se está leyendo del archivo para poder definir su booleano Schengen
-            provisional = Airport(icao, lat, lon)
-            SetSchengen(provisional)
-            #añadir el aeropuerto a la lista de aeropuertos y avanzar en la secuencia
-            aeropuertos.append(provisional)
+            if len(elements) >= 3:
+                #obetener el ICAO
+                icao = str(elements[0])
+                #pasar las coordenadas de horas minutos y segundos a decimal con un redondeo de dos decimales
+                lat = round(float(elements[1][-2:])/3600 + float(elements[1][-4:-2])/60 + float(elements[1][1:-4]),2)
+                lon = round(float(elements[2][-2:])/3600 + float(elements[2][-4:-2])/60 + float(elements[2][1:-4]),2)
+                #definir signo de la latitud
+                if elements[1][0] == "S":
+                    lat = -1*lat
+                # definir signo de la longitud
+                if elements[2][0] == "W":
+                    lon = -1*lon
+                #definir un objeto provisional con las características del aeropuerto que se está leyendo del archivo para poder definir su booleano Schengen
+                provisional = Airport(icao, lat, lon)
+                SetSchengen(provisional)
+                #añadir el aeropuerto a la lista de aeropuertos y avanzar en la secuencia
+                aeropuertos.append(provisional)
             linia = fitxer.readline()
         #cerrar fichero
         fitxer.close()
@@ -196,29 +199,33 @@ def MapAirports (airports):
     A to learn how to show info in
     Google Earth.'''
     #inicializar archivo kml y definir los estilos de agujas para distinguir entre Schengen y no Schengen
-    fitxer = open("Ubicaciones.kml", "w")
-    fitxer.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n\t<Document>\n')
-    fitxer.write('<Style id="color_schengen"><IconStyle><color>ff00ff00</color></IconStyle></Style>\n')
-    fitxer.write('<Style id="color_noschengen"><IconStyle><color>ff0000ff</color></IconStyle></Style>\n')
-    #recorrido para escribir el archivo de cada elemento en la lista de aeropuertos que identifica sus coordenadas para ubicarlo en el mapa y su ICAO + la funcion de IsSchengen para definir el estilo gráfico de la aguja
-    for i in range (len(airports)):
-        icao = str(airports[i].ICAO)
-        lat = airports[i].latitude
-        lon = airports[i].longitude
+    try:
+        fitxer = open("Ubicaciones.kml", "w")
+        fitxer.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n\t<Document>\n')
+        fitxer.write('<Style id="color_schengen"><IconStyle><color>ff00ff00</color></IconStyle></Style>\n')
+        fitxer.write('<Style id="color_noschengen"><IconStyle><color>ff0000ff</color></IconStyle></Style>\n')
+        #recorrido para escribir el archivo de cada elemento en la lista de aeropuertos que identifica sus coordenadas para ubicarlo en el mapa y su ICAO + la funcion de IsSchengen para definir el estilo gráfico de la aguja
+        for i in range (len(airports)):
+            icao = str(airports[i].ICAO)
+            lat = airports[i].latitude
+            lon = airports[i].longitude
 
-        if IsSchengenAirport(icao):
-            estilo = "#color_schengen"
-        else:
-            estilo = "#color_noschengen"
+            if IsSchengenAirport(icao):
+                estilo = "#color_schengen"
+            else:
+                estilo = "#color_noschengen"
 
-        fitxer.write(f'\t\t<Placemark>\n'
-                     f'\t\t\t<name>{icao}</name>\n'
-                     f'\t\t\t<styleUrl>{estilo}</styleUrl>\n'
-                     f'\t\t\t<Point>\n'
-                     f'\t\t\t\t<coordinates>{lon},{lat}</coordinates>\n'
-                     f'\t\t\t</Point>\n'
-                     f'\t\t</Placemark>\n')
-    #cierre del fichero
-    fitxer.write('\t</Document>\n</kml>')
-    fitxer.close()
+            fitxer.write(f'\t\t<Placemark>\n'
+                         f'\t\t\t<name>{icao}</name>\n'
+                         f'\t\t\t<styleUrl>{estilo}</styleUrl>\n'
+                         f'\t\t\t<Point>\n'
+                         f'\t\t\t\t<coordinates>{lon},{lat}</coordinates>\n'
+                         f'\t\t\t</Point>\n'
+                         f'\t\t</Placemark>\n')
+        #cierre del fichero
+        fitxer.write('\t</Document>\n</kml>')
+        fitxer.close()
+        return True
+    except OSError:
+        return False
 

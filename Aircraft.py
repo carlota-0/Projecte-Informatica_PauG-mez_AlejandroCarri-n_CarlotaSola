@@ -20,12 +20,13 @@ def LoadArrivals (filename):
         linea=fitxer.readline()
         while linea != '':
             elements = linea.split()
-            id=str(elements[0])
-            origin_airport = str(elements[1])
-            time_of_landing = str(elements[2])
-            company = str(elements[3])
-            informacion=Aircraft(id, company, origin_airport, time_of_landing)
-            Arrivals.append(informacion)
+            if len(elements) >= 4:
+                id=str(elements[0])
+                origin_airport = str(elements[1])
+                time_of_landing = str(elements[2])
+                company = str(elements[3])
+                informacion=Aircraft(id, company, origin_airport, time_of_landing)
+                Arrivals.append(informacion)
             linea = fitxer.readline()
         fitxer.close()
     #en caso de no existir el archivo se devuelve una lista vacía, si existe entonces se devuelve Aircrafts
@@ -66,11 +67,16 @@ def LoadDepartures(filename):
     return Departures
 
 def SaveFlights(aircrafts, filename):
-    fitxer = open(filename, 'w')
-    for aircraft in aircrafts:
-        fitxer.write(f'{aircraft.id, aircraft.origin_airport, aircraft.time_of_landing, aircraft.company}\n')
-    fitxer.close()
-    print("S'han guardat les dades a " +filename)
+    if not filename:
+        return False
+    try:
+        fitxer = open(filename, 'w')
+        for aircraft in aircrafts:
+            fitxer.write(f'{aircraft.id, aircraft.origin_airport, aircraft.time_of_landing, aircraft.company}\n')
+        fitxer.close()
+        return True
+    except OSError:
+        return False
 
 def PlotFlightsType(aircrafts):
     ''' Receives a list of aircraft and shows a stacked bar plot of the number of
@@ -174,47 +180,50 @@ def MapFlights(aircrafts, airports):
     lonLEBL = 2.08
     latLEBL = 41.30
     #inicializar fichero kml + defnir estilos
-    fitxer = open("Vuelos.kml", "w")
-    fitxer.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n\t<Document>\n')
-    fitxer.write('<Style id="color_schengen"><LineStyle><color>ff00ff00</color><width>2</width></LineStyle></Style>\n')
-    fitxer.write('<Style id="color_noschengen"><LineStyle><color>ff0000ff</color><width>2</width></LineStyle></Style>\n')
-    #recorrido de la lista de aviones donde se mira si el aeropuerto de origen es schengen o no para dibujar una línea de un color u otro (se verifica que el aeropuerto esté en el listado)
-    for i in range (len(aircrafts)):
-        origen = str(aircrafts[i].origin_airport)
+    try:
+        fitxer = open("Vuelos.kml", "w")
+        fitxer.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n\t<Document>\n')
+        fitxer.write('<Style id="color_schengen"><LineStyle><color>ff00ff00</color><width>2</width></LineStyle></Style>\n')
+        fitxer.write('<Style id="color_noschengen"><LineStyle><color>ff0000ff</color><width>2</width></LineStyle></Style>\n')
+        #recorrido de la lista de aviones donde se mira si el aeropuerto de origen es schengen o no para dibujar una línea de un color u otro (se verifica que el aeropuerto esté en el listado)
+        for i in range (len(aircrafts)):
+            origen = str(aircrafts[i].origin_airport)
 
-        encontrado = False
-        k = 0
-        while k < len(airports) and not encontrado:
-            if origen == airports[k].ICAO:
-                encontrado = True
+            encontrado = False
+            k = 0
+            while k < len(airports) and not encontrado:
+                if origen == airports[k].ICAO:
+                    encontrado = True
+                elif not encontrado:
+                    k += 1
+            if encontrado:
+                lonOrigen = airports[k].longitude
+                latOrigen = airports[k].latitude
+                if IsSchengenAirport(origen):
+                    estilo = "#color_schengen"
+                else:
+                    estilo = "#color_noschengen"
+
+                fitxer.write(f'\t\t<Placemark>\n'
+                             f'\t\t\t<name>Vuelo {origen} - LEBL.txt</name>\n'
+                             f'\t\t\t<styleUrl>{estilo}</styleUrl>\n'
+                             f'\t\t\t<LineString>\n'
+                             f'\t\t\t\t<altitudeMode>clampToGround</altitudeMode>\n'
+                             f'\t\t\t\t<extrude>1</extrude>\n'
+                             f'\t\t\t\t<tessellate>1</tessellate>\n'
+                             f'\t\t\t\t<coordinates>\n'
+                             f'\t\t\t\t\t{lonOrigen},{latOrigen}\n'
+                             f'\t\t\t\t\t{lonLEBL},{latLEBL}\n'
+                             f'\t\t\t\t</coordinates>\n'
+                             f'\t\t\t</LineString>\n'
+                             f'\t\t</Placemark>\n')
             elif not encontrado:
-                k += 1
-        if encontrado:
-            lonOrigen = airports[k].longitude
-            latOrigen = airports[k].latitude
-            if IsSchengenAirport(origen):
-                estilo = "#color_schengen"
-            else:
-                estilo = "#color_noschengen"
-
-            fitxer.write(f'\t\t<Placemark>\n'
-                         f'\t\t\t<name>Vuelo {origen} - LEBL.txt</name>\n'
-                         f'\t\t\t<styleUrl>{estilo}</styleUrl>\n'
-                         f'\t\t\t<LineString>\n'
-                         f'\t\t\t\t<altitudeMode>clampToGround</altitudeMode>\n'
-                         f'\t\t\t\t<extrude>1</extrude>\n'
-                         f'\t\t\t\t<tessellate>1</tessellate>\n'
-                         f'\t\t\t\t<coordinates>\n'
-                         f'\t\t\t\t\t{lonOrigen},{latOrigen}\n'
-                         f'\t\t\t\t\t{lonLEBL},{latLEBL}\n'
-                         f'\t\t\t\t</coordinates>\n'
-                         f'\t\t\t</LineString>\n'
-                         f'\t\t</Placemark>\n')
-        elif not encontrado:
-            print(f'{aircrafts[i].origin_airport}, de l avió {aircrafts[i]} no està a la llista d aeroports')
-    #cieere documento
-    fitxer.write('\t</Document>\n</kml>')
-    fitxer.close()
+                print(f'{aircrafts[i].origin_airport}, de l avió {aircrafts[i]} no està a la llista d aeroports')
+        #cieere documento
+        fitxer.write('\t</Document>\n</kml>')
+        fitxer.close()
+    except OSError:
+        return
 
 def LongDistanceArrivals(aircrafts,airports):
     '''Returns a list with the aircrafts from the input list of aircrafts that
@@ -318,10 +327,8 @@ def MergeMovements (arrivals, departures): #[Pau]
 
     return resultado
 
-# Gràfic TOP 5 aerolinies més significatives
-''' 
 def PlotAirlinesSignificatives(aircrafts):
-
+    #gráfico top 5 aerolíneas + otras
     aerolineasTotals = []
 
     for i in range (len(aircrafts)):
@@ -357,7 +364,6 @@ def PlotAirlinesSignificatives(aircrafts):
                 aerolineas[k] = aerolineasTotals[i]
                 break
 
-# --- añadir una barra de la suma de las demás aerolíneas --- 
     aerolineas.append("Otras")
     otros = 0
     for i in range (len(aerolineasTotals)):
@@ -368,9 +374,7 @@ def PlotAirlinesSignificatives(aircrafts):
         if not encontrado:
             otros = volsTotals[i]+otros
     vols.append(otros)
-# -------------------------------------------------------------
 
-# gráfico 
     fig = Figure()
     ax = fig.add_subplot(111)
 
@@ -380,9 +384,34 @@ def PlotAirlinesSignificatives(aircrafts):
     ax.set_ylabel('Número de vuelos')
     ax.tick_params(axis='x', labelsize=10, labelrotation=0)
 
-    print(len(aerolineas))
-
     return fig
-'''
+
+def PlotAirlinesFiltered(aircrafts, selected, show_others):
+    #gráfico de aerolíneas seleccionadas + opcionalmente otras
+    vols = []
+    for s in selected:
+        count = 0
+        for ac in aircrafts:
+            if ac.company == s:
+                count += 1
+        vols.append(count)
+
+    labels = list(selected)
+    if show_others:
+        otros = 0
+        for ac in aircrafts:
+            if ac.company not in selected:
+                otros += 1
+        labels.append("Otras")
+        vols.append(otros)
+
+    fig = Figure()
+    ax = fig.add_subplot(111)
+    ax.bar(labels, vols, color="#458B73")
+    ax.set_title("Vuelos por compañía (filtrado)", family="monospace", weight="bold", size="medium")
+    ax.set_xlabel('Aerolíneas')
+    ax.set_ylabel('Número de vuelos')
+    ax.tick_params(axis='x', labelsize=8, labelrotation=45)
+    return fig
 
 # test section

@@ -48,11 +48,12 @@ def LoadAirlines(terminal, t_name):
             elementos = linea.split()
 
             if len(elementos) > 0:
-                codigo_icao = elementos[-1]  # para coger la última palabra de la linea
-
-                terminal.ICAO.append(codigo_icao)
+                codigo_icao = elementos[-1].strip()
+                if codigo_icao:
+                    terminal.ICAO.append(codigo_icao)
 
         fitxer.close()
+        return terminal.ICAO
 
     except FileNotFoundError:
         return [-1]
@@ -86,10 +87,18 @@ def LoadAirportStructure(filename):
         f = open(filename, 'r')
         linea = f.readline()
         trozos = linea.split(' ')
+        if len(trozos) < 2:
+            f.close()
+            return None
         nombre_aeropuerto = trozos[0]
         aeropuerto = Barcelona_AP(nombre_aeropuerto)
+        try:
+            num_terminales = int(trozos[1])
+        except ValueError:
+            f.close()
+            return None
         terminales = []
-        for i in range(int(trozos[1])):
+        for i in range(num_terminales):
             provTerminal = Terminal(f'T{i + 1}')
             terminales.append(provTerminal)
         aeropuerto.terminals = terminales
@@ -100,25 +109,26 @@ def LoadAirportStructure(filename):
         linea = f.readline()
         i = -1
         while linea != '':
-            # Usamos strip para limpiar cualquier salto de línea residual antes de separar
             linea_limpia = linea.strip()
             if linea_limpia:
                 trozos = linea_limpia.split(' ')
+                if len(trozos) < 1:
+                    linea = f.readline()
+                    continue
                 if trozos[0] == 'Terminal':
                     i += 1
-                else:
-                    # Aplicamos .strip() al tipo de área (Schengen / non-Schengen) para eliminar caracteres ocultos
+                elif len(trozos) >= 4:
                     tipo_area = trozos[2].strip()
                     provBoarding = Boarding_area(trozos[1], tipo_area)
                     SetGate(provBoarding, trozos[-3], trozos[-1], f'T{i + 1}BA{trozos[1]}')
-                    aeropuerto.terminals[i].Boarding_area.append(provBoarding)
+                    if i >= 0 and i < len(aeropuerto.terminals):
+                        aeropuerto.terminals[i].Boarding_area.append(provBoarding)
             linea = f.readline()
 
         f.close()
         return aeropuerto
 
     except FileNotFoundError:
-        print(f"Error crítico: No se encontró el archivo '{filename}'.")
         return None
 
 
