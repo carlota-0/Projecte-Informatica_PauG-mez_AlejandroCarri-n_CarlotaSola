@@ -957,17 +957,17 @@ frame_v2.grid_rowconfigure(2, weight=1)
 
 # ------ CARGAR/EXPORTAR VUELOS VUELOS ------
 
-frame_gestionvuelos = tk.LabelFrame(frame_v2, text="Cargar/Exportar llegadas")
+frame_gestionvuelos = tk.LabelFrame(frame_v2, text="Cargar/Exportar llegadas y salidas")
 frame_gestionvuelos.grid(row = 0, column = 0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_gestionvuelos.grid_rowconfigure(0, weight=1)
 frame_gestionvuelos.grid_rowconfigure(2, weight=1)
 frame_gestionvuelos.grid_columnconfigure(0, weight=1)
 frame_gestionvuelos.grid_columnconfigure(1, weight=1)
 
-boton_cargarvuelos = ttk.Button(frame_gestionvuelos, text="Cargar vuelos", command=cargar_vuelos)
+boton_cargarvuelos = ttk.Button(frame_gestionvuelos, text="Cargar llegadas", command=cargar_vuelos)
 boton_cargarvuelos.grid(row=0, column=0, padx=(5,0), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
-boton_exportarvuelos = ttk.Button(frame_gestionvuelos, text="Exportar vuelos", command=exportar_vuelos)
+boton_exportarvuelos = ttk.Button(frame_gestionvuelos, text="Exportar llegadas", command=exportar_vuelos)
 boton_exportarvuelos.grid(row=0, column=1, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 separador_fusion = ttk.Separator(frame_gestionvuelos, orient="horizontal")
@@ -976,7 +976,7 @@ separador_fusion.grid(row=1, column=0, columnspan=2, sticky=tk.W + tk.E, padx=5,
 boton_cargarsalidas = ttk.Button(frame_gestionvuelos, text="Cargar salidas", command=cargar_salidas)
 boton_cargarsalidas.grid(row=2, column=0, padx=(5,0), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
-boton_fusionar = ttk.Button(frame_gestionvuelos, text="Combinar Salidas y Llegadas", command=fusionar_movimientos)
+boton_fusionar = ttk.Button(frame_gestionvuelos, text="Combinar Llegadas y Salidas", command=fusionar_movimientos)
 boton_fusionar.grid(row=2, column=1, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 # ------ FRAME GRAFICOS VUELOS ------
@@ -1162,11 +1162,7 @@ combo_tema.bind("<<ComboboxSelected>>", aplicar_tema)
 
 
 # ------ BOTÓN GENERAR REPORTE DIARIO ------
-boton_reporte = ttk.Button(
-    frame_puertas,
-    text="Generar Reporte Diario de Cierre",
-    command=generar_reporte_diario
-)
+boton_reporte = ttk.Button(frame_puertas, text="Generar Reporte Diario de Cierre", command=generar_reporte_diario)
 boton_reporte.grid(row=3, column=0, columnspan=2, padx=5, pady=10, sticky=tk.N + tk.S + tk.E + tk.W)
 
 
