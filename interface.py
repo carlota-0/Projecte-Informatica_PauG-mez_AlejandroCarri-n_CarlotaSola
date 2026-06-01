@@ -173,6 +173,7 @@ def cargar_vuelos():
 def cargar_salidas():
     #cargar vuelos de salida desde un archivo
     global departures_list
+    global aircrafts
     archivo = filedialog.askopenfilename(
         title="Seleccione un archivo de salidas",
         filetypes=(("Archivos CSV", "*.txt"), ("Todos los archivos", "*.*"))
