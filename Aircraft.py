@@ -20,12 +20,13 @@ def LoadArrivals (filename):
         linea=fitxer.readline()
         while linea != '':
             elements = linea.split()
-            id=str(elements[0])
-            origin_airport = str(elements[1])
-            time_of_landing = str(elements[2])
-            company = str(elements[3])
-            informacion=Aircraft(id, company, origin_airport, time_of_landing)
-            Arrivals.append(informacion)
+            if len(elements) >= 4:
+                id=str(elements[0])
+                origin_airport = str(elements[1])
+                time_of_landing = str(elements[2])
+                company = str(elements[3])
+                informacion=Aircraft(id, company, origin_airport, time_of_landing)
+                Arrivals.append(informacion)
             linea = fitxer.readline()
         fitxer.close()
     #en caso de no existir el archivo se devuelve una lista vacía, si existe entonces se devuelve Aircrafts
@@ -66,11 +67,16 @@ def LoadDepartures(filename):
     return Departures
 
 def SaveFlights(aircrafts, filename):
-    fitxer = open(filename, 'w')
-    for aircraft in aircrafts:
-        fitxer.write(f'{aircraft.id, aircraft.origin_airport, aircraft.time_of_landing, aircraft.company}\n')
-    fitxer.close()
-    print("S'han guardat les dades a " +filename)
+    if not filename:
+        return False
+    try:
+        fitxer = open(filename, 'w')
+        for aircraft in aircrafts:
+            fitxer.write(f'{aircraft.id, aircraft.origin_airport, aircraft.time_of_landing, aircraft.company}\n')
+        fitxer.close()
+        return True
+    except OSError:
+        return False
 
 def PlotFlightsType(aircrafts):
     ''' Receives a list of aircraft and shows a stacked bar plot of the number of
@@ -98,36 +104,35 @@ def PlotFlightsType(aircrafts):
     return fig
 
 def PlotArrivals(aircrafts):
-    try:
-        #definir una lista Horas y llenarla con los números del 0 al 23 (24h ya son las Oh del día siguiente)
-        horas = []
-        for i in range (24):
-            horas.append(i)
-        #definir una lista vuelos donde se cuentan el número de vuelos que hay por franja de horas 0-1, 1-2...
-        vols = [0] * len(horas)
-        #contar vuelos por hora
-        for i in range (len(aircrafts)):
-            horacompleta = aircrafts[i].time_of_landing
-            horacompleta = horacompleta.split(":")
-            hora = int(horacompleta[0])
-            vols[hora] = vols[hora] + 1
-        #definir el gráfico
-        fig = Figure()
-        ax = fig.add_subplot(111)
+    #definir una lista Horas y llenarla con los números del 0 al 23 (24h ya son las Oh del día siguiente)
+    horas = []
+    for i in range (24):
+        horas.append(i)
+    #definir una lista vuelos donde se cuentan el número de vuelos que hay por franja de horas 0-1, 1-2...
+    vols = [0] * len(horas)
+    #contar vuelos por hora (solo aviones con hora de llegada)
+    for i in range (len(aircrafts)):
+        if not aircrafts[i].time_of_landing:
+            continue
+        horacompleta = aircrafts[i].time_of_landing
+        horacompleta = horacompleta.split(":")
+        hora = int(horacompleta[0])
+        vols[hora] = vols[hora] + 1
+    #definir el gráfico
+    fig = Figure()
+    ax = fig.add_subplot(111)
 
-        marcas = []
-        for i in range (len(horas)):
-            if horas[i]%2 == 0 or horas[i] == 0:
-                marcas.append(horas[i])
-        ax.bar(horas, vols, color="#458B73")
-        ax.set_xticks(marcas)
-        ax.set_title("Distribución de los vuelos entrantes por hora", family="monospace", weight="bold", size="medium")
-        ax.set_xlabel('Franjas horarias de vuelos')
-        ax.set_ylabel('Número de vuelos')
+    marcas = []
+    for i in range (len(horas)):
+        if horas[i]%2 == 0 or horas[i] == 0:
+            marcas.append(horas[i])
+    ax.bar(horas, vols, color="#458B73")
+    ax.set_xticks(marcas)
+    ax.set_title("Distribución de los vuelos entrantes por hora", family="monospace", weight="bold", size="medium")
+    ax.set_xlabel('Franjas horarias de vuelos')
+    ax.set_ylabel('Número de vuelos')
 
-        return fig
-    except ValueError:
-        print("Error en los datos")
+    return fig
 
 def PlotAirlines(aircrafts):
     #definir una lista con todas las aerolíneas distintas
@@ -175,47 +180,50 @@ def MapFlights(aircrafts, airports):
     lonLEBL = 2.08
     latLEBL = 41.30
     #inicializar fichero kml + defnir estilos
-    fitxer = open("Vuelos.kml", "w")
-    fitxer.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n\t<Document>\n')
-    fitxer.write('<Style id="color_schengen"><LineStyle><color>ff00ff00</color><width>2</width></LineStyle></Style>\n')
-    fitxer.write('<Style id="color_noschengen"><LineStyle><color>ff0000ff</color><width>2</width></LineStyle></Style>\n')
-    #recorrido de la lista de aviones donde se mira si el aeropuerto de origen es schengen o no para dibujar una línea de un color u otro (se verifica que el aeropuerto esté en el listado)
-    for i in range (len(aircrafts)):
-        origen = str(aircrafts[i].origin_airport)
+    try:
+        fitxer = open("Vuelos.kml", "w")
+        fitxer.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n\t<Document>\n')
+        fitxer.write('<Style id="color_schengen"><LineStyle><color>ff00ff00</color><width>2</width></LineStyle></Style>\n')
+        fitxer.write('<Style id="color_noschengen"><LineStyle><color>ff0000ff</color><width>2</width></LineStyle></Style>\n')
+        #recorrido de la lista de aviones donde se mira si el aeropuerto de origen es schengen o no para dibujar una línea de un color u otro (se verifica que el aeropuerto esté en el listado)
+        for i in range (len(aircrafts)):
+            origen = str(aircrafts[i].origin_airport)
 
-        encontrado = False
-        k = 0
-        while k < len(airports) and not encontrado:
-            if origen == airports[k].ICAO:
-                encontrado = True
+            encontrado = False
+            k = 0
+            while k < len(airports) and not encontrado:
+                if origen == airports[k].ICAO:
+                    encontrado = True
+                elif not encontrado:
+                    k += 1
+            if encontrado:
+                lonOrigen = airports[k].longitude
+                latOrigen = airports[k].latitude
+                if IsSchengenAirport(origen):
+                    estilo = "#color_schengen"
+                else:
+                    estilo = "#color_noschengen"
+
+                fitxer.write(f'\t\t<Placemark>\n'
+                             f'\t\t\t<name>Vuelo {origen} - LEBL.txt</name>\n'
+                             f'\t\t\t<styleUrl>{estilo}</styleUrl>\n'
+                             f'\t\t\t<LineString>\n'
+                             f'\t\t\t\t<altitudeMode>clampToGround</altitudeMode>\n'
+                             f'\t\t\t\t<extrude>1</extrude>\n'
+                             f'\t\t\t\t<tessellate>1</tessellate>\n'
+                             f'\t\t\t\t<coordinates>\n'
+                             f'\t\t\t\t\t{lonOrigen},{latOrigen}\n'
+                             f'\t\t\t\t\t{lonLEBL},{latLEBL}\n'
+                             f'\t\t\t\t</coordinates>\n'
+                             f'\t\t\t</LineString>\n'
+                             f'\t\t</Placemark>\n')
             elif not encontrado:
-                k += 1
-        if encontrado:
-            lonOrigen = airports[k].longitude
-            latOrigen = airports[k].latitude
-            if IsSchengenAirport(origen):
-                estilo = "#color_schengen"
-            else:
-                estilo = "#color_noschengen"
-
-            fitxer.write(f'\t\t<Placemark>\n'
-                         f'\t\t\t<name>Vuelo {origen} - LEBL.txt</name>\n'
-                         f'\t\t\t<styleUrl>{estilo}</styleUrl>\n'
-                         f'\t\t\t<LineString>\n'
-                         f'\t\t\t\t<altitudeMode>clampToGround</altitudeMode>\n'
-                         f'\t\t\t\t<extrude>1</extrude>\n'
-                         f'\t\t\t\t<tessellate>1</tessellate>\n'
-                         f'\t\t\t\t<coordinates>\n'
-                         f'\t\t\t\t\t{lonOrigen},{latOrigen}\n'
-                         f'\t\t\t\t\t{lonLEBL},{latLEBL}\n'
-                         f'\t\t\t\t</coordinates>\n'
-                         f'\t\t\t</LineString>\n'
-                         f'\t\t</Placemark>\n')
-        elif not encontrado:
-            print(f'{aircrafts[i].origin_airport}, de l avió {aircrafts[i]} no està a la llista d aeroports')
-    #cieere documento
-    fitxer.write('\t</Document>\n</kml>')
-    fitxer.close()
+                print(f'{aircrafts[i].origin_airport}, de l avió {aircrafts[i]} no està a la llista d aeroports')
+        #cieere documento
+        fitxer.write('\t</Document>\n</kml>')
+        fitxer.close()
+    except OSError:
+        return
 
 def LongDistanceArrivals(aircrafts,airports):
     '''Returns a list with the aircrafts from the input list of aircrafts that
@@ -273,12 +281,54 @@ def MergeMovements (arrivals, departures): #[Pau]
     error code shall be returned. IMPORTANT: an aircraft can land and take-off
     more than once at LEBL during the same day.
     '''
-    return None
+    #comprobar que no hay listas vacías y devolver un código de error si lo están
+    if arrivals == [] or departures == []:
+        return -1
 
-# Gràfic TOP 5 aerolinies més significatives
-''' 
+    # lista para marcar qué despegues ya han sido emparejados
+    matched = []
+    i = 0
+    while i < len(departures):
+        matched.append(False)
+        i += 1
+
+    resultado = []
+
+    # recorrer  llegadas
+    i = 0
+    while i < len(arrivals):
+        id_buscar = arrivals[i].id
+        t_llegada = arrivals[i].time_of_landing
+        encontrado = False
+        j = 0
+
+        #buscar unsa salida
+        while j < len(departures) and not encontrado:
+            if not matched[j] and departures[j].id == id_buscar and t_llegada < departures[j].time_of_departure:
+                #crear un nuevo objeto de la clase Aircraft con los datos combinados
+                nuevo = Aircraft(id=id_buscar, company=arrivals[i].company, origin_airport=arrivals[i].origin_airport, time_of_landing=arrivals[i].time_of_landing, destination_airport=departures[j].destination_airport, time_of_departure=departures[j].time_of_departure)
+                resultado.append(nuevo)
+                matched[j] = True
+                encontrado = True
+            j += 1
+
+        # Si no se encontró despegue compatible, añadir solo la llegada
+        if not encontrado:
+            resultado.append(arrivals[i])
+
+        i += 1
+
+    # Añadir los despegues que no fueron emparejados (night aircraft que solo salen)
+    j = 0
+    while j < len(departures):
+        if not matched[j]:
+            resultado.append(departures[j])
+        j += 1
+
+    return resultado
+
 def PlotAirlinesSignificatives(aircrafts):
-
+    #gráfico top 5 aerolíneas + otras
     aerolineasTotals = []
 
     for i in range (len(aircrafts)):
@@ -314,7 +364,6 @@ def PlotAirlinesSignificatives(aircrafts):
                 aerolineas[k] = aerolineasTotals[i]
                 break
 
-# --- añadir una barra de la suma de las demás aerolíneas --- 
     aerolineas.append("Otras")
     otros = 0
     for i in range (len(aerolineasTotals)):
@@ -325,9 +374,7 @@ def PlotAirlinesSignificatives(aircrafts):
         if not encontrado:
             otros = volsTotals[i]+otros
     vols.append(otros)
-# -------------------------------------------------------------
 
-# gráfico 
     fig = Figure()
     ax = fig.add_subplot(111)
 
@@ -337,9 +384,34 @@ def PlotAirlinesSignificatives(aircrafts):
     ax.set_ylabel('Número de vuelos')
     ax.tick_params(axis='x', labelsize=10, labelrotation=0)
 
-    print(len(aerolineas))
-
     return fig
-'''
+
+def PlotAirlinesFiltered(aircrafts, selected, show_others):
+    #gráfico de aerolíneas seleccionadas + opcionalmente otras
+    vols = []
+    for s in selected:
+        count = 0
+        for ac in aircrafts:
+            if ac.company == s:
+                count += 1
+        vols.append(count)
+
+    labels = list(selected)
+    if show_others:
+        otros = 0
+        for ac in aircrafts:
+            if ac.company not in selected:
+                otros += 1
+        labels.append("Otras")
+        vols.append(otros)
+
+    fig = Figure()
+    ax = fig.add_subplot(111)
+    ax.bar(labels, vols, color="#458B73")
+    ax.set_title("Vuelos por compañía (filtrado)", family="monospace", weight="bold", size="medium")
+    ax.set_xlabel('Aerolíneas')
+    ax.set_ylabel('Número de vuelos')
+    ax.tick_params(axis='x', labelsize=8, labelrotation=45)
+    return fig
 
 # test section
