@@ -357,190 +357,205 @@ def asignar_puertas_nocturnas():
 
 def PlotDayOccupancy(bcn, aircrafts):
     """
-    Construye el gráfico de ocupación horaria adaptado a tu estructura de datos exacta.
+    CORREGIDA Y BLINDADA: Calcula la ocupación teórica de las 24h paso a paso
+    sin romper ni vaciar el objeto 'bcn' principal de la interfaz.
     """
     import matplotlib.pyplot as plt
+    import copy
 
-    # Comprobación de seguridad por si el usuario no ha cargado los datos todavía
     if not bcn or not aircrafts:
         from tkinter import messagebox
-        messagebox.showerror('Error', 'Faltan los datos del aeropuerto, los vuelos o ambos.')
+        messagebox.showerror('Error', 'Faltan los datos del aeropuerto (V3), los vuelos (V2) o ambos.')
         return
 
+    # CLONAMOS el aeropuerto para que las liberaciones de puertas ocurran en una copia
+    # y no destruyan los datos del aeropuerto principal que usa el slider.
+    bcn_copia = copy.deepcopy(bcn)
+
     horas = [f"{str(h).zfill(2)}:00" for h in range(24)]
-    terminal_names = [t.name for t in bcn.terminals]
+    terminal_names = [t.name for t in bcn_copia.terminals]
     ocupacion_por_terminal = {name: [0] * 24 for name in terminal_names}
-    no_asignados = [0] * 24
+
+    # Inicializamos la copia con los aviones nocturnos a las 00:00
+    AssignNightGates(bcn_copia, aircrafts)
 
     for h_idx, hora_actual in enumerate(horas):
-        # 1. Liberar puertas de aviones que salen a esta hora
-        for ac in aircrafts:
-            ac_id = getattr(ac, 'id', getattr(ac, 'ID', None))
-            ac_dep = getattr(ac, 'time_of_departure', None)
-            if ac_dep:
-                hora_dep = ac_dep.split(":")[0] + ":00"
-                if hora_dep == hora_actual:
-                    FreeGate(bcn, ac_id)
+        # 1. Correr las asignaciones minuto a minuto para esta hora completa
+        for m in range(60):
+            tiempo_sim_str = f"{str(h_idx).zfill(2)}:{str(m).zfill(2)}"
+            AssignGatesAtTime(bcn_copia, aircrafts, tiempo_sim_str)
 
-        # 2. Contar ocupación usando Boarding_area y Gate con mayúsculas reales
-        for terminal in bcn.terminals:
+        # 2. Contar de manera precisa cuántas puertas quedan ocupadas al final de esta hora
+        for terminal in bcn_copia.terminals:
             count = 0
-            # Usamos getattr por seguridad, pero apunta directamente a Boarding_area
-            lista_areas = getattr(terminal, 'Boarding_area', [])
-            for area in lista_areas:
-                lista_puertas = getattr(area, 'Gate', [])
-                for gate in lista_puertas:
-                    if getattr(gate, 'occupied', False) or getattr(gate, 'Occupied', False):
+            for area in getattr(terminal, 'Boarding_area', []):
+                for gate in getattr(area, 'Gate', []):
+                    if getattr(gate, 'occupied', False):
                         count += 1
             ocupacion_por_terminal[terminal.name][h_idx] = count
 
-    # --- Renderizado del gráfico ---
+    # --- Renderizado del gráfico de líneas ---
     fig, ax = plt.subplots(figsize=(10, 5))
     for name, datos_hora in ocupacion_por_terminal.items():
-        ax.plot(horas, datos_hora, marker='o', label=f"Ocupación {name}")
+        ax.plot(horas, datos_hora, marker='o', linewidth=2, label=f"Terminal {name}")
 
-
-    ax.set_xlabel("Hora del día")
-    ax.set_ylabel("Puertas Ocupadas")
-    ax.set_title("Ocupación Dinámica del Aeropuerto (V4)")
+    ax.set_xlabel("Hora del día (00:00 a 23:00)", fontweight='bold')
+    ax.set_ylabel("Número de Puertas Ocupadas", fontweight='bold')
+    ax.set_title("Evolución de la Ocupación en las 24 horas (LEBL)", fontsize=13, fontweight='bold', pad=10)
     ax.grid(True, linestyle='--', alpha=0.5)
-    ax.legend()
+    ax.legend(loc='upper left')
+
     plt.tight_layout()
     plt.show()
 
 
 def MostrarMapaInteractivo(bcn, aircrafts):
-    """
-    Muestra un mapa interactivo con un Slider para las horas y un selector
-    de Terminal (T1 / T2) que utiliza la función lógica del grupo (AssignGatesAtTime)
-    de forma secuencial y limpia para actualizar el estado de ocupación.
-    """
     import matplotlib.pyplot as plt
     from matplotlib.widgets import Slider, RadioButtons
     import matplotlib.patches as patches
+    import sys
+    import os
+    import copy
 
     if not bcn or not aircrafts:
         from tkinter import messagebox
         messagebox.showerror('Error', 'Primero debes cargar el aeropuerto y los vuelos.')
         return
 
-    # Creamos la figura y ajustamos márgenes para los controles interactivos
-    fig, ax = plt.subplots(figsize=(11, 6))
-    plt.subplots_adjust(bottom=0.2, left=0.2)
+    # =========================================================================
+    # ⏱️ PRECALCULAR TODO EL DÍA MINUTO A MINUTO (Simulación limpia)
+    # =========================================================================
+    bcn_simulado = copy.deepcopy(bcn)
 
-    # Variables de estado que rastrean lo que el usuario ve en pantalla
-    terminal_actual = bcn.terminals[0].name  # Por defecto la T1
-    hora_actual_int = 12  # Por defecto las 12:00
+    # Vaciamos por completo el aeropuerto para empezar desde cero absoluto
+    for t in bcn_simulado.terminals:
+        for area in t.Boarding_area:
+            for g in area.Gate:
+                g.occupied = False
+                g.aircraft_id = None
 
-    def simular_y_dibujar():
+    # Cargamos los pernoctadores de la noche usando vuestra función corregida
+    from LEBL import AssignNightGates, AssignGatesAtTime
+    AssignNightGates(bcn_simulado, aircrafts)
+
+    # Creamos la línea de tiempo de 24 horas (1440 minutos)
+    historial_minutos = []
+
+    for m in range(1440):
+        horas = str(m // 60).zfill(2)
+        mins = str(m % 60).zfill(2)
+        tiempo_str = f"{horas}:{mins}"
+
+        # Ejecutamos vuestra lógica minuto a minuto
+        AssignGatesAtTime(bcn_simulado, aircrafts, tiempo_str)
+
+        # Guardamos la foto exacta de este minuto
+        historial_minutos.append(copy.deepcopy(bcn_simulado))
+
+    # =========================================================================
+    # 🎨 CONFIGURACIÓN DE LA VENTANA GRÁFICA
+    # =========================================================================
+    fig, ax = plt.subplots(figsize=(14, 7.5))
+    plt.subplots_adjust(bottom=0.2, left=0.25)
+
+    terminal_actual = bcn.terminals[0].name
+    minutos_actuales = 0
+
+    # =========================================================================
+    # 🔄 RENDERIZADO DINÁMICO
+    # =========================================================================
+    def simular_y_draw():
         ax.clear()
-        ax.set_title(f"Estado de Puertas - {terminal_actual} - Hora {str(hora_actual_int).zfill(2)}:00", fontsize=14,
+
+        # Extraemos el estado del aeropuerto exacto de la línea de tiempo
+        bcn_instante = historial_minutos[minutos_actuales]
+
+        horas_str = str(minutos_actuales // 60).zfill(2)
+        mins_str = str(minutos_actuales % 60).zfill(2)
+        tiempo_actual_str = f"{horas_str}:{mins_str}"
+
+        ax.set_title(f"Plano de Puertas Dinámico - {terminal_actual} - Hora {tiempo_actual_str}", fontsize=13,
                      fontweight='bold')
-        ax.set_xlim(-1, 10)
-        ax.set_ylim(-1, 8)
+        slider_tiempo.valtext.set_text("")
+
+        # Filtramos por la terminal que el usuario tenga seleccionada
+        t_obj = next((t for t in bcn_instante.terminals if t.name == terminal_actual), bcn_instante.terminals[0])
+        lista_areas = t_obj.Boarding_area
+
+        # Organizamos las filas visuales de 18 en 18 para que quepa en pantalla
+        total_filas_necesarias = 0
+        filas_por_area = []
+        for area in lista_areas:
+            num_puertas = len(area.Gate)
+            filas_este_area = ((num_puertas - 1) // 18) + 1 if num_puertas > 0 else 1
+            filas_por_area.append(filas_este_area)
+            total_filas_necesarias += filas_este_area
+
+        ax.set_xlim(-1.8, 21)
+        ax.set_ylim(-1, total_filas_necesarias * 1.4)
         ax.axis('off')
 
-        # 1. RESETEAR TODAS LAS PUERTAS A SU ESTADO VACÍO ANTES DE COMENZAR EL DÍA
-        for t in bcn.terminals:
-            for area in getattr(t, 'Boarding_area', []):
-                for g in getattr(area, 'Gate', []):
-                    g.occupied = False
-                    g.aircraft_id = ""
+        fila_actual_global = total_filas_necesarias - 1
 
-        # 2. SIMULAR EL PASO DEL TIEMPO HORA A HORA SECUENCIALMENTE
-        # Pasamos por cada hora de forma independiente para que no se dupliquen asignaciones
-        for h in range(hora_actual_int + 1):
-            hora_str = f"{str(h).zfill(2)}:00"
-
-            # Ejecutamos la lógica de asignación y liberación de esa hora concreta
-            try:
-                AssignGatesAtTime(bcn, aircrafts, hora_str)
-            except Exception as e:
-                # Evita que un error bloquee el renderizado del gráfico
-                pass
-
-        # 3. OBTENER LA TERMINAL QUE EL USUARIO HA SELECCIONADO PARA DIBUJARLA
-        t_obj = next((t for t in bcn.terminals if t.name == terminal_actual), bcn.terminals[0])
-        lista_areas = getattr(t_obj, 'Boarding_area', [])
-
-        # Dibujar pasillo principal superior
-        ax.plot([0, 9], [7, 7], color='#1a5f7a', linewidth=8)
-
-        # Posiciones en el eje X para representar las áreas de embarque
-        columnas_x = [1.5, 4.5, 7.5]
-
+        # Dibujamos los bloques correspondientes
         for i, area in enumerate(lista_areas):
-            if i >= 3: break  # Límite visual de la ventana de dibujo
+            nombre_area = area.name.strip()
+            num_filas_area = filas_por_area[i]
 
-            x = columnas_x[i]
-            nombre_area = getattr(area, 'name', f"Area {i + 1}")
+            y_centro_etiqueta = (fila_actual_global - (num_filas_area - 1) / 2) * 1.4
+            ax.text(-0.6, y_centro_etiqueta + 0.2, f"Área {nombre_area}", ha='right', va='center', fontsize=10,
+                    fontweight='bold', color='#1a5f7a')
 
-            # Dibujar el pasillo vertical del muelle de embarque
-            ax.plot([x, x], [1, 7], color='#1a5f7a', linewidth=10)
-            ax.text(x, 0.5, nombre_area, ha='center', fontsize=12, fontweight='bold')
+            for j, gate in enumerate(area.Gate):
+                subfila_dentro_area = j // 18
+                columna = j % 18
 
-            lista_puertas = getattr(area, 'Gate', [])
+                fila_render = fila_actual_global - subfila_dentro_area
+                x_pos = columna * 1.15
+                y_pos = fila_render * 1.4
 
-            # Dibujar hasta 6 puertas por cada área
-            for p_idx, gate in enumerate(lista_puertas):
-                if p_idx >= 6: break
-
-                es_izquierda = (p_idx % 2 == 0)
-                fila_y = [5.5, 3.5, 1.5][p_idx // 2]
-
-                if es_izquierda:
-                    ax.plot([x - 0.6, x], [fila_y, fila_y], color='#1a5f7a', linewidth=4)
-                    x_rect = x - 1.2
-                    ha_text = 'right'
-                    x_text = x - 1.4
-                else:
-                    ax.plot([x, x + 0.6], [fila_y, fila_y], color='#1a5f7a', linewidth=4)
-                    x_rect = x + 0.7
-                    ha_text = 'left'
-                    x_text = x + 1.3
-
-                # Capturar el estado de ocupación calculado
-                is_occupied = getattr(gate, 'occupied', False) or getattr(gate, 'Occupied', False)
-                ac_label = getattr(gate, 'aircraft_id', '') if is_occupied else ""
-
-                # Color del avión según el estado: Rojo (ocupado) o Verde (libre)
-                color = 'red' if is_occupied else '#10b981'
-
-                # Pintar el rectángulo de la puerta
-                rect = patches.Rectangle((x_rect, fila_y - 0.2), 0.5, 0.4, linewidth=1, facecolor=color)
+                color = '#dc2626' if gate.occupied else '#10b981'
+                rect = patches.Rectangle((x_pos, y_pos), 0.95, 0.6, linewidth=1, facecolor=color, edgecolor='white')
                 ax.add_patch(rect)
 
-                # Si hay una aeronave asignada, pintar su matrícula
-                if ac_label:
-                    ax.text(x_text, fila_y, ac_label, ha=ha_text, va='center', fontsize=8, color='black',
-                            fontweight='bold')
+                if gate.occupied and gate.aircraft_id:
+                    ax.text(x_pos + 0.47, y_pos + 0.3, str(gate.aircraft_id)[:5], ha='center', va='center', fontsize=6,
+                            color='white', fontweight='bold', rotation=30)
+                else:
+                    num_limpio = gate.name.split('G')[-1] if 'G' in gate.name else str(j + 1)
+                    ax.text(x_pos + 0.47, y_pos + 0.3, num_limpio, ha='center', va='center', fontsize=7, color='white',
+                            alpha=0.8)
 
+            fila_actual_global -= num_filas_area
         fig.canvas.draw_idle()
 
-    # --- CONTROLES INTERACTIVOS DE MATPLOTLIB ---
-    ax_slider = plt.axes([0.25, 0.05, 0.55, 0.03], facecolor='lightgray')
-    slider_hora = Slider(ax_slider, 'Hora', 0, 23, valinit=12, valfmt='%02d:00')
+    # =========================================================================
+    # 🎛️ CONTROLES MATPLOTLIB
+    # =========================================================================
+    ax_slider = plt.axes([0.3, 0.05, 0.55, 0.03], facecolor='lightgray')
+    slider_tiempo = Slider(ax_slider, 'Tiempo del día', 0, 1439, valinit=0, valstep=1)
 
-    ax_radio = plt.axes([0.02, 0.4, 0.12, 0.2], facecolor='lightgray')
+    ax_radio = plt.axes([0.02, 0.4, 0.16, 0.2], facecolor='lightgray')
     nombres_terminales = [t.name for t in bcn.terminals]
     radio_terminal = RadioButtons(ax_radio, nombres_terminales)
 
     def update_slider(val):
-        nonlocal hora_actual_int
-        hora_actual_int = int(slider_hora.val)
-        simular_y_dibujar()
+        nonlocal minutos_actuales
+        minutos_actuales = int(slider_tiempo.val)
+        simular_y_draw()
 
     def update_radio(label):
         nonlocal terminal_actual
         terminal_actual = label
-        simular_y_dibujar()
+        simular_y_draw()
 
-    slider_hora.on_changed(update_slider)
+    slider_tiempo.on_changed(update_slider)
     radio_terminal.on_clicked(update_radio)
 
-    # Dibujamos el estado inicial
-    simular_y_dibujar()
+    # Lanzamiento inicial
+    simular_y_draw()
     plt.show()
+
 
 
 # ------ CONFIGURACION VENTANA ------
@@ -796,11 +811,20 @@ listadopuertas.config(xscrollcommand=hscrollbar.set)
 hscrollbar.config(command=listadopuertas.xview)
 
 
-# ------ v4 --------
-boton_grafico_v4 = tk.Button(frame_puertas, text="Gráfico Ocupación 24h (V4)", command=lambda: PlotDayOccupancy(bcn, aircrafts))
+# ------ SECCIÓN V4 CONTROL DE INTERFAZ (LIMPIO) ------
+boton_grafico_v4 = tk.Button(
+    frame_puertas,
+    text="Gráfico Ocupación 24h",
+    command=lambda: PlotDayOccupancy(bcn, aircrafts)
+)
 boton_grafico_v4.grid(row=0, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
-boton_mapa_interactivo = tk.Button(frame_puertas, text="Ver Mapa Puertas Ocupadas (Slider)", command=lambda: MostrarMapaInteractivo(bcn, aircrafts))
+boton_mapa_interactivo = tk.Button(
+    frame_puertas,
+    text="Plano Dinámico Real",
+    command=lambda: MostrarMapaInteractivo(bcn, aircrafts)
+)
 boton_mapa_interactivo.grid(row=1, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+
 
 window.mainloop()

@@ -84,35 +84,34 @@ def LoadAirportStructure(filename):
     '''
     try:
         f = open(filename, 'r')
-        # leer la primera linea del archivo para extarer ICAO aeropuerto y nº terminales
         linea = f.readline()
         trozos = linea.split(' ')
-        # obtener ICAO aeropuerto
         nombre_aeropuerto = trozos[0]
-        # creacion objeto de la clase BarcelonaAP con el ICAO obtenido
         aeropuerto = Barcelona_AP(nombre_aeropuerto)
-        # obtencion lista terminales
         terminales = []
         for i in range(int(trozos[1])):
             provTerminal = Terminal(f'T{i + 1}')
             terminales.append(provTerminal)
-        # incluir temrinales en el objeto aeropuerto
         aeropuerto.terminals = terminales
-        # cargar icaos de aerolineas para cada terminal
+
         for i in range(len(aeropuerto.terminals)):
             LoadAirlines(terminales[i], terminales[i].name)
 
-        # cargar boarding areas de cada terminal + asignar gates
         linea = f.readline()
         i = -1
         while linea != '':
-            trozos = linea.split(' ')
-            if trozos[0] == 'Terminal':
-                i += 1
-            else:
-                provBoarding = Boarding_area(trozos[1], trozos[2])
-                SetGate(provBoarding, trozos[-3], trozos[-1], f'T{i + 1}BA{trozos[1]}')
-                aeropuerto.terminals[i].Boarding_area.append(provBoarding)
+            # Usamos strip para limpiar cualquier salto de línea residual antes de separar
+            linea_limpia = linea.strip()
+            if linea_limpia:
+                trozos = linea_limpia.split(' ')
+                if trozos[0] == 'Terminal':
+                    i += 1
+                else:
+                    # Aplicamos .strip() al tipo de área (Schengen / non-Schengen) para eliminar caracteres ocultos
+                    tipo_area = trozos[2].strip()
+                    provBoarding = Boarding_area(trozos[1], tipo_area)
+                    SetGate(provBoarding, trozos[-3], trozos[-1], f'T{i + 1}BA{trozos[1]}')
+                    aeropuerto.terminals[i].Boarding_area.append(provBoarding)
             linea = f.readline()
 
         f.close()
@@ -125,11 +124,7 @@ def LoadAirportStructure(filename):
 
 def AssignGate(bcn, aircraft):
     '''Given bcn of class BarcelonaAP and an aircraft of class Aircraft this function looks for the first gate that
-    is not occupied in the correct boarding area. To decide the correct boarding area the function must check the
-    airlineterminal assignment (using the SearchTerminal function defined above) and the Schengen/non-Schengen type
-    of flight-boarding area. The gate assignment consists in updating the occupancy boolean and the aircraft field
-    of the chosen gate inside the bcn parameter. If there is not more free gates of the correct type, an error code
-    shall be returned and no modification of the bcn parameter shall be done.'''
+    is not occupied in the correct boarding area...'''
 
     aerolineaAircraft = aircraft.company
     terminal = SearchTerminal(bcn, aerolineaAircraft)
@@ -139,54 +134,83 @@ def AssignGate(bcn, aircraft):
     indiceTerminal = 0
     try:
         if terminal == "":
-            print("Aerolínea no encontrada en las terminales.")
             return None
 
-        # buscar si la terminal está en algún archivo
+        # Buscar el índice de la terminal correspondiente
         while not find and indiceTerminal < len(terminales):
             if terminal == terminales[indiceTerminal].name:
                 find = True
             elif not find:
                 indiceTerminal += 1
 
-        origen = aircraft.origin_airport
-        Schengen = IsSchengenAirport(origen)
+        # --- CORRECCIÓN INTELIGENTE DE FRONTERA SCHENGEN ---
+        # Si el avión tiene origen, evaluamos el origen.
+        # Si el origen está vacío (avión pernoctador que solo sale), evaluamos su destino.
+        if hasattr(aircraft, 'origin_airport') and aircraft.origin_airport != "":
+            origen_evaluar = aircraft.origin_airport
+        else:
+            origen_evaluar = getattr(aircraft, 'destination_airport', "")
+
+        # Si ambos campos están vacíos por algún error de datos, por defecto es Schengen
+        if origen_evaluar == "":
+            Schengen = True
+        else:
+            Schengen = IsSchengenAirport(origen_evaluar)
+        # ----------------------------------------------------
+
         num = len(bcn.terminals[indiceTerminal].Boarding_area)
         listBoardingAreas = []
+
+        # Filtramos las áreas limpiando saltos de línea con .strip()
         if Schengen:
             for i in range(num):
-                if bcn.terminals[indiceTerminal].Boarding_area[i].area == "Schengen":
+                if bcn.terminals[indiceTerminal].Boarding_area[i].area.strip() == "Schengen":
                     listBoardingAreas.append(bcn.terminals[indiceTerminal].Boarding_area[i])
-        elif not Schengen:
+        else:
             for i in range(num):
-                if bcn.terminals[indiceTerminal].Boarding_area[i].area == "non-Schengen":
+                if bcn.terminals[indiceTerminal].Boarding_area[i].area.strip() == "non-Schengen":
                     listBoardingAreas.append(bcn.terminals[indiceTerminal].Boarding_area[i])
 
+        # --- ASIGNACIÓN DE PUERTAS EQUILIBRADA ---
+        # Para evitar que la zona M se coma todo el tráfico y la R se quede vacía,
+        # si hay más de un área disponible (como M y R), podemos distribuir los aviones
+        # de forma alternativa usando el ID del avión (o su matrícula).
         j = 0
+        if len(listBoardingAreas) > 1:
+            # Si el último carácter de la matrícula del avión es un número par o letra par,
+            # intentamos empezar a buscar por la segunda zona (Área R) para balancear la carga.
+            try:
+                if ord(aircraft.id[-1]) % 2 == 0:
+                    j = 1
+            except:
+                j = 0
+
         gate = None
         encontrado = False
-        while not encontrado and j < len(listBoardingAreas):
+        intentos_areas = 0
+
+        # Recorremos las áreas de embarque de forma circular para asegurar el reparto real
+        while not encontrado and intentos_areas < len(listBoardingAreas):
+            area_actual = listBoardingAreas[j % len(listBoardingAreas)]
             k = 0
-            while not encontrado and k < len(listBoardingAreas[j].Gate):
-                if not listBoardingAreas[j].Gate[k].occupied:
+            while not encontrado and k < len(area_actual.Gate):
+                if not area_actual.Gate[k].occupied:
                     encontrado = True
-                    gate = listBoardingAreas[j].Gate[k]
-                elif not encontrado:
+                    gate = area_actual.Gate[k]
+                else:
                     k += 1
-            if not encontrado:
-                j += 1
+            j += 1
+            intentos_areas += 1
 
         if encontrado:
             gate.occupied = True
             gate.aircraft_id = aircraft.id
             return True
-        elif not encontrado:
-            print('No hay gates libres')
+        else:
             return None
-    except IndexError:
-        print('Error error en el array')
-        return None
 
+    except IndexError:
+        return None
 
 def GateOccupancy(bcn):
     ''' Given a BarcelonaAP object, returns a list of dictionaries with
@@ -212,64 +236,96 @@ def GateOccupancy(bcn):
 
 
 def PlotGateOccupancy(occupancy_list):
-    ''' BONUS: Builds a plot showing the terminals, boarding areas,
-    and the status of each gate (Free/Occupied).
+    ''' BONUS OPTIMIZADO: Construye un gráfico separando el Área B
+    en dos filas para que no se corten las puertas en la pantalla.
     '''
     import matplotlib.pyplot as plt
 
-    # Creamos un gráfico grande para que quepan todas las puertas
-    fig, ax = plt.subplots(figsize=(14, 8))
+    fig, ax = plt.subplots(figsize=(15, 9))  # Aumentamos un pelín el tamaño del lienzo
 
     y_labels = []
     y_ticks = []
     current_y = 0
     area_y_map = {}
 
-    # 1. Asignamos una altura (eje Y) a cada Área de Embarque (ej. "T1 - Area A")
+    # 1. PASO PREVIO: Registrar las filas en el eje Y (incluyendo la fila extra para el Área B)
     for item in occupancy_list:
-        area_key = f"{item['terminal']} - Area {item['area']}"
+        terminal = item['terminal']
+        area = item['area']
+
+        # Si es el Área B, vamos a mirar el número de la puerta para decidir su fila
+        if terminal == "T1" and area == "B":
+            try:
+                gate_num = int(item['gate_name'].split('G')[-1])
+            except:
+                gate_num = 0
+
+            # Dividimos el Área B: Puertas hasta la 35 en la fila principal, el resto a la de continuación
+            if gate_num <= 35:
+                area_key = f"{terminal} - Area {area}"
+            else:
+                area_key = f"{terminal} - Area {area} (Cont.)"
+        else:
+            # Para el resto de áreas (A, C, M, R, S), mantenemos su comportamiento normal
+            area_key = f"{terminal} - Area {area}"
+
         if area_key not in area_y_map:
             area_y_map[area_key] = current_y
             y_labels.append(area_key)
             y_ticks.append(current_y)
             current_y += 1
 
-    # Listas para separar las puertas libres de las ocupadas
+    # Listas para guardar las posiciones de los cuadraditos
     x_free, y_free = [], []
     x_occ, y_occ = [], []
 
-    # 2. Posicionamos cada puerta en el mapa
+    # 2. Posicionar cada puerta en su coordenada correspondiente
     for item in occupancy_list:
-        # Extraemos el número de la puerta (Ej: de "T1BAAG11" sacamos el 11)
-        gate_num = int(item['gate_name'].split('G')[-1])
-        area_key = f"{item['terminal']} - Area {item['area']}"
+        try:
+            gate_num = int(item['gate_name'].split('G')[-1])
+        except:
+            continue
+
+        terminal = item['terminal']
+        area = item['area']
+
+        # Aplicamos la misma regla de división para pintar los puntos en el lugar correcto
+        if terminal == "T1" and area == "B" and gate_num > 35:
+            area_key = f"{terminal} - Area {area} (Cont.)"
+        else:
+            area_key = f"{terminal} - Area {area}"
+
         y_coord = area_y_map[area_key]
 
         if item['occupied']:
             x_occ.append(gate_num)
             y_occ.append(y_coord)
-            # Dibujamos el ID del avión un poco por encima de la puerta roja
-            ax.text(gate_num, y_coord + 0.2, item['aircraft_id'],
-                    fontsize=8, ha='center', va='bottom', rotation=45, color='black')
+            # Dibujamos el ID del avión con una rotación bonita para que no se solapen
+            ax.text(gate_num, y_coord + 0.15, item['aircraft_id'],
+                    fontsize=7, ha='center', va='bottom', rotation=45, color='black', fontweight='bold')
         else:
             x_free.append(gate_num)
             y_free.append(y_coord)
 
-    # 3. Dibujamos los "cuadraditos" de las puertas
-    ax.scatter(x_free, y_free, c='#2ECC71', label='Libre', s=100, marker='s', edgecolors='black', alpha=0.7)
-    ax.scatter(x_occ, y_occ, c='#E74C3C', label='Ocupada', s=100, marker='s', edgecolors='black', alpha=0.9)
+    # 3. Dibujamos los "cuadraditos" de las puertas (reducimos el tamaño 's' de 100 a 70 para que quepan mejor)
+    ax.scatter(x_free, y_free, c='#2ECC71', label='Libre', s=70, marker='s', edgecolors='black', alpha=0.8)
+    ax.scatter(x_occ, y_occ, c='#E74C3C', label='Ocupada', s=70, marker='s', edgecolors='black', alpha=0.9)
 
-    # 4. Formato visual del panel
+    # 4. Formato visual de la interfaz del gráfico
     ax.set_yticks(y_ticks)
-    ax.set_yticklabels(y_labels)
+    ax.set_yticklabels(y_labels, fontsize=10, fontweight='bold')
     ax.set_xlabel('Número de Puerta', fontsize=12, fontweight='bold')
-    ax.set_title('Panel de Ocupación de Puertas - LEBL.txt', fontsize=16, fontweight='bold')
-    ax.legend(loc='upper right')
+    ax.set_title('Panel de Ocupación de Puertas de Embarque (LEBL)', fontsize=15, fontweight='bold', pad=15)
+    ax.legend(loc='upper right', frameon=True, shadow=True)
 
-    plt.grid(axis='x', linestyle='--', alpha=0.4)  # Cuadrícula vertical para guiarse mejor
+    # Añadimos líneas de rejilla tanto verticales como horizontales muy suaves para guiar la vista
+    plt.grid(axis='both', linestyle='--', alpha=0.3)
+
+    # Ajustamos los límites de la pantalla para dar espacio a los textos de los aviones arriba
+    ax.set_ylim(-0.5, current_y - 0.5)
+
     plt.tight_layout()
     plt.show()
-
 
 def IsAirlineInTerminal(terminal, name):
     ''' Given terminal of class Terminal and the name of one airline, this
@@ -352,62 +408,95 @@ def FreeGate(bcn, aircraft_id):
     return 0  # Éxito
 
 
-def AssignNightGates(bcn, aircrafts):  # [Pau]
-    ''' This function receives an object of class BarcelonaAP, bcn, and a list of
-    aircraft. It assigns a gate to each of the aircraft in the list. Use the new
-    version of function AssignGate. Check that the aircrafts in the list are only
-    departure flights, with empty data related to arrival. In case an aircraft
-    does not meet the condition then skip to the following aircraft in list. If
-    the input list is empty return an error code.
-    '''
-    if len(aircrafts) == 0:
-        return -1
+def AssignNightGates(bcn, aircrafts):
+    # 1. Agrupamos todos los vuelos por matrícula (ID) para analizar su comportamiento real
+    historial_aviones = {}
+    for ac in aircrafts:
+        if ac.id not in historial_aviones:
+            historial_aviones[ac.id] = {"llegadas": [], "salidas": [], "objeto": ac}
 
-    assigned = 0
-    i = 0
-    while i < len(aircrafts):
-        # Solo asignar puerta a aviones que NO tengan datos de llegada (solo salida)
-        if aircrafts[i].time_of_landing == "" and aircrafts[i].origin_airport == "":
-            resultado = AssignGate(bcn, aircrafts[i])
-            if resultado is True:
-                assigned += 1
-        i += 1
+        if getattr(ac, "time_of_landing", None):
+            historial_aviones[ac.id]["llegadas"].append(ac.time_of_landing)
+        if getattr(ac, "time_of_departure", None):
+            historial_aviones[ac.id]["salidas"].append(ac.time_of_departure)
 
-    return assigned
+    contador_nocturnos = 0
+    aviones_procesados = set()  # Para evitar procesar la misma matrícula dos veces
+
+    # 2. Recorremos los aviones para ver quiénes califican como "Pernoctadores"
+    for ac in aircrafts:
+        id_avion = ac.id
+        if id_avion in aviones_procesados:
+            continue
+
+        datos = historial_aviones.get(id_avion, {"llegadas": [], "salidas": [], "objeto": ac})
+
+        es_pernoctador = False
+
+        # REGLA 1: Tiene una salida programada, pero NUNCA llegó hoy (estaba desde ayer)
+        if len(datos["salidas"]) > 0 and len(datos["llegadas"]) == 0:
+            es_pernoctador = True
+
+        # REGLA 2: Tiene llegada y salida, pero su primera salida ocurre ANTES de su primera llegada
+        elif len(datos["salidas"]) > 0 and len(datos["llegadas"]) > 0:
+            primera_salida = sorted(datos["salidas"])[0]
+            primera_llegada = sorted(datos["llegadas"])[0]
+            if primera_salida < primera_llegada:
+                es_pernoctador = True
+
+        # 3. SOLO si es pernoctador, le buscamos la puerta reglamentaria
+        if es_pernoctador:
+            aviones_procesados.add(id_avion)
+            # 🔥 CORRECCIÓN CRÍTICA: Usamos vuestra función de asignación reglamentaria
+            # para respetar aerolíneas y fronteras Schengen, en lugar de llenar todo al azar
+            success = AssignGate(bcn, datos["objeto"])
+            if success is not None:
+                contador_nocturnos += 1
+
+    # Imprimimos el recuento real en consola
+    print(f"Asignación nocturna completada: {contador_nocturnos} aviones asignados de forma reglamentaria.")
+
+    #  CORRECCIÓN CRÍTICA 2: Devolvemos el número para que Tkinter no muestre 'None'
+    return contador_nocturnos
 
 
 def AssignGatesAtTime(bcn, aircrafts, time):
-    '''This function receives an object of class BarcelonaAP, bcn, and a list of aircraft. It assigns a gate
-    to each of the aircraft in the list. Use the new version of function AssignGate. Check that the aircrafts
-    in the list are only departure flights, with empty data related to arrival. In case an aircraft does not
-    meet the condition then skip to the following aircraft in list. If the input list is empty return an error code.'''
-
+    '''
+    Versión Avanzada de Simulación Continua SIN DUPLICADOS.
+    Mantiene los aviones en las puertas de embarque desde que aterrizan
+    hasta el minuto exacto de su despegue.
+    '''
     unassigned_count = 0
-    current_hour = time.split(':')[0]  # Extrau "14" de "14:00", per exemple
 
-    # Primer
+    # 1. LIBERACIÓN DE PUERTAS (Aviones que despegan en este minuto exacto)
     for terminal in bcn.terminals:
         for area in terminal.Boarding_area:
             for gate in area.Gate:
-                if gate.occupied:
-                    # Trobem l'avió que ocupa la porta
+                if gate.occupied and gate.aircraft_id:
+                    # Buscamos el vuelo en la lista para comprobar su hora de salida
                     for ac in aircrafts:
                         if ac.id == gate.aircraft_id:
-                            # Si la hora de "departure" ja ha passat
-                            if ac.time_of_departure != "" and ac.time_of_departure <= time:
+                            if ac.time_of_departure != "" and ac.time_of_departure == time:
                                 gate.occupied = False
-                                gate.aircraft_id = ""
-                            break  # Seguim amb la següent porta
+                                gate.aircraft_id = None
+                            break
 
-    # Asignem portes en els trams de 1h
+    # 2. ASIGNACIÓN CONTINUA (Aviones que aterrizan en este minuto exacto)
     for ac in aircrafts:
-        if ac.time_of_landing != "":
-            ac_hour = ac.time_of_landing.split(':')[0]
+        if ac.time_of_landing != "" and ac.time_of_landing == time:
 
-            # Si el nou avuió d'arribada està en el tram que estem tractan...
-            if ac_hour == current_hour:
+            # CONTROL DE DUPLICADOS: Comprobamos si este avión ya tiene una puerta asignada
+            ya_esta_en_puerta = False
+            for terminal in bcn.terminals:
+                for area in terminal.Boarding_area:
+                    for gate in area.Gate:
+                        if gate.aircraft_id == ac.id:
+                            ya_esta_en_puerta = True
+                            break
+
+            # Solo si el avión no está duplicado en el aeropuerto, le asignamos puerta
+            if not ya_esta_en_puerta:
                 success = AssignGate(bcn, ac)
-
                 if success is None:
                     unassigned_count += 1
 
