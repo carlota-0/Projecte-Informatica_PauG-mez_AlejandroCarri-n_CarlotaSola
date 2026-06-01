@@ -19,11 +19,13 @@ canvas = None
 # ------ FUNCIONES ------
 #Funcions V1
 def mostrar_aeropuertos():
+    #mostrar todos los aeropuertos en el listado
     listado.delete(0, 'end')
     for i in range(len(aeropuertos)):
         listado.insert(tk.END, PrintAirport(aeropuertos[i]))
     return None
 def anadir():
+    #añadir un aeropuerto a la lista
     if entry_icao.get() != "" and entry_lat.get() != "" and entry_lon.get() != "":
         try:
             icao = entry_icao.get()
@@ -42,6 +44,7 @@ def anadir():
     else:
         messagebox.showerror('Error','Faltan datos del aeropuerto')
 def suprimir():
+    #eliminar un aeropuerto de la lista
     if entry_icao.get() != "":
         spr_icao = entry_icao.get()
         RemoveAirport(aeropuertos,spr_icao)
@@ -50,6 +53,7 @@ def suprimir():
     else:
         messagebox.showerror('Error','Falta el ICAO del aeropuerto a eliminar')
 def importar_archivo():
+    #cargar aeropuertos desde un archivo
     file_path = filedialog.askopenfilename(
         title="Seleccione un archivo",
         filetypes=(("Archivos CSV", "*.txt"), ("Todos los archivos", "*.*"))
@@ -73,6 +77,7 @@ def importar_archivo():
     messagebox.showinfo('Aeropuertos cargados', f'Se cargaron {nuevos} aeropuertos')
     return None
 def graficoAeropuertos():
+    #mostrar gráfico de aeropuertos Schengen/No-Schengen
     if aeropuertos:
         global canvas, canvas_graficos
         fig = PlotAirports(aeropuertos)
@@ -92,6 +97,7 @@ def graficoAeropuertos():
     else:
         messagebox.showerror('Error','La lista de aeropuertos está vacía')
 def archivo_Schengen():
+    #guardar aeropuertos Schengen en un archivo .txt
     SaveSchengenAirports(aeropuertos,"Schengen.txt")
     if aeropuertos:
         messagebox.showinfo('Archivo guardado','Se ha guardado un archivo Schengen.txt')
@@ -99,6 +105,7 @@ def archivo_Schengen():
         messagebox.showwarning('Archivo no guardado', 'No hay aeropuertos para guardar')
     return None
 def map_airports():
+    #mostrar aeropuertos en Google Earth
     if aeropuertos:
         try:
             MapAirports(aeropuertos)
@@ -113,12 +120,14 @@ def map_airports():
     else:
         messagebox.showerror('Error','Lista de aeropuertos vacía')
 def limpiar_formulario():
+    #limpiar los campos de entrada
     entry_icao.delete(0, 'end')
     entry_lon.delete(0, 'end')
     entry_lat.delete(0, 'end')
 
 #Funcions V2
 def mostrar_vuelos():
+    #mostrar todos los vuelos en el listado
     listadovuelos.delete(0, 'end')
     for i in range(len(aircrafts)):
         org = aircrafts[i].origin_airport if aircrafts[i].origin_airport else "---"
@@ -128,6 +137,7 @@ def mostrar_vuelos():
         listadovuelos.insert(tk.END, f'ID: {aircrafts[i].id}\t\tCompañía: {aircrafts[i].company}\t\tOrigen: {org}\t\tLlegada: {lleg}\t\tDestino: {dst}\t\tSalida: {sal}')
     return None
 def cargar_vuelos():
+    #cargar vuelos de llegada desde un archivo
     global aircrafts
     archivo = filedialog.askopenfilename(
         title="Seleccione un archivo",
@@ -151,6 +161,7 @@ def cargar_vuelos():
     mostrar_vuelos()
     messagebox.showinfo('Llegadas cargadas', f'Se cargaron {nuevos} vuelos de llegada')
 def cargar_salidas():
+    #cargar vuelos de salida desde un archivo
     global departures_list
     archivo = filedialog.askopenfilename(
         title="Seleccione un archivo de salidas",
@@ -172,6 +183,7 @@ def cargar_salidas():
         messagebox.showwarning('Sin datos', 'El archivo no contenía datos de salidas')
     return None
 def fusionar_movimientos():
+    #fusionar llegadas y salidas del mismo avión
     global aircrafts, departures_list
     if len(aircrafts) == 0:
         messagebox.showerror('Error', 'No hay vuelos de llegada cargados')
@@ -189,6 +201,7 @@ def fusionar_movimientos():
     return None
 
 def exportar_vuelos():
+    #exportar vuelos a un archivo
     archivo = filedialog.askopenfilename(
         title="Seleccione un archivo .txt",
         filetypes=(("Archivos de texto","*.txt"), ("Todos los archivos", "*.*"))
@@ -198,6 +211,7 @@ def exportar_vuelos():
     except FileNotFoundError:
         messagebox.showerror('Error', 'No se ha seleccionado ningún archivo')
 def grafico_vuelosSchengen():
+    #mostrar gráfico de vuelos Schengen/No-Schengen
     if aircrafts:
         global canvas, canvas_graficos
         fig = PlotFlightsType(aircrafts)
@@ -217,6 +231,7 @@ def grafico_vuelosSchengen():
     else:
         messagebox.showerror('Error','La lista de vuelos está vacía')
 def grafico_vuelosPorCompania():
+    #mostrar gráfico de vuelos por compañía
     if aircrafts:
         global canvas, canvas_graficos
         fig = PlotAirlines(aircrafts)
@@ -236,6 +251,7 @@ def grafico_vuelosPorCompania():
     else:
         messagebox.showerror('Error','La lista de vuelos está vacía')
 def grafico_vuelosPorLlegada():
+    #mostrar gráfico de vuelos por hora de llegada
     if aircrafts:
         global canvas, canvas_graficos
         fig = PlotArrivals(aircrafts)
@@ -255,6 +271,7 @@ def grafico_vuelosPorLlegada():
     else:
         messagebox.showerror('Error','La lista de vuelos está vacía')
 def earth_largaDistancia():
+    #mostrar vuelos de larga distancia en Google Earth
     if aircrafts and aeropuertos:
         try:
             MapFlights(LongDistanceArrivals(aircrafts,aeropuertos), aeropuertos)
@@ -269,6 +286,7 @@ def earth_largaDistancia():
     else:
         messagebox.showerror('Error', 'Faltan los datos de los vuelos, los datos de los aeropuertos o ambos')
 def earth_vuelos():
+    #mostrar todos los vuelos en Google Earth
     if aircrafts and aeropuertos:
         try:
             MapFlights(aircrafts, aeropuertos)
@@ -285,6 +303,7 @@ def earth_vuelos():
 
 #Funcions V3
 def cargar_estructura():
+    #cargar estructura del aeropuerto desde un archivo
     archivo = filedialog.askopenfilename(
         title="Seleccione un archivo",
         filetypes=(("Archivos CSV", "*.txt"), ("Todos los archivos", "*.*"))
@@ -300,6 +319,7 @@ def cargar_estructura():
 
     return None
 def asignar_puertas():
+    #asignar una puerta a cada vuelo
     if not aircrafts or not bcn:
         messagebox.showerror('Error', 'Listado de aviones vacío o falta estructura del aeropuerto')
     else:
@@ -308,6 +328,7 @@ def asignar_puertas():
         mostrar_puertas()
         return None
 def mostrar_puertas():
+    #mostrar estado de las puertas en el listado
     listadopuertas.delete(0, 'end')
     for j in range (len(bcn.terminals)):
         for i in range(len(bcn.terminals[j].Boarding_area)):
@@ -318,6 +339,7 @@ def mostrar_puertas():
                     listadopuertas.insert(tk.END,f'{bcn.terminals[j].Boarding_area[i].Gate[k].name}\t\t({bcn.terminals[j].Boarding_area[i].area})\t\tLibre')
     return None
 def asignar_puertas_nocturnas():
+    #asignar puertas a aviones que pasan la noche
     if not aircrafts or not bcn:
         messagebox.showerror('Error', 'Listado de aviones vacío o falta estructura del aeropuerto')
     else:
