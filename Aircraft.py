@@ -273,7 +273,51 @@ def MergeMovements (arrivals, departures): #[Pau]
     error code shall be returned. IMPORTANT: an aircraft can land and take-off
     more than once at LEBL during the same day.
     '''
-    return None
+    #comprobar que no hay listas vacías y devolver un código de error si lo están
+    if arrivals == [] or departures == []:
+        return -1
+
+    # lista para marcar qué despegues ya han sido emparejados
+    matched = []
+    i = 0
+    while i < len(departures):
+        matched.append(False)
+        i += 1
+
+    resultado = []
+
+    # recorrer  llegadas
+    i = 0
+    while i < len(arrivals):
+        id_buscar = arrivals[i].id
+        t_llegada = arrivals[i].time_of_landing
+        encontrado = False
+        j = 0
+
+        #buscar unsa salida
+        while j < len(departures) and not encontrado:
+            if not matched[j] and departures[j].id == id_buscar and t_llegada < departures[j].time_of_departure:
+                #crear un nuevo objeto de la clase Aircraft con los datos combinados
+                nuevo = Aircraft(id=id_buscar, company=arrivals[i].company, origin_airport=arrivals[i].origin_airport, time_of_landing=arrivals[i].time_of_landing, destination_airport=departures[j].destination_airport, time_of_departure=departures[j].time_of_departure)
+                resultado.append(nuevo)
+                matched[j] = True
+                encontrado = True
+            j += 1
+
+        # Si no se encontró despegue compatible, añadir solo la llegada
+        if not encontrado:
+            resultado.append(arrivals[i])
+
+        i += 1
+
+    # Añadir los despegues que no fueron emparejados (night aircraft que solo salen)
+    j = 0
+    while j < len(departures):
+        if not matched[j]:
+            resultado.append(departures[j])
+        j += 1
+
+    return resultado
 
 # Gràfic TOP 5 aerolinies més significatives
 ''' 

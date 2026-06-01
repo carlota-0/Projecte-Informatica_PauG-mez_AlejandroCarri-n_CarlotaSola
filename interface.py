@@ -11,6 +11,7 @@ import sys
 import subprocess
 
 aircrafts = []
+departures_list = []
 aeropuertos = []
 bcn = None
 canvas = None
@@ -115,7 +116,11 @@ def limpiar_formulario():
 def mostrar_vuelos():
     listadovuelos.delete(0, 'end')
     for i in range(len(aircrafts)):
-        listadovuelos.insert(tk.END, f'ID: {aircrafts[i].id}\tCompañía: {aircrafts[i].company}\tOrigen: {aircrafts[i].origin_airport}\tLlegada: {aircrafts[i].time_of_landing}')
+        org = aircrafts[i].origin_airport if aircrafts[i].origin_airport else "---"
+        lleg = aircrafts[i].time_of_landing if aircrafts[i].time_of_landing else "---"
+        dst = aircrafts[i].destination_airport if aircrafts[i].destination_airport else "---"
+        sal = aircrafts[i].time_of_departure if aircrafts[i].time_of_departure else "---"
+        listadovuelos.insert(tk.END, f'ID: {aircrafts[i].id}\t\tCompañía: {aircrafts[i].company}\t\tOrigen: {org}\t\tLlegada: {lleg}\t\tDestino: {dst}\t\tSalida: {sal}')
     return None
 def cargar_vuelos():
     global aircrafts
@@ -135,6 +140,37 @@ def cargar_vuelos():
         if not(encontrado):
             aircrafts.append(provisional[i])
     mostrar_vuelos()
+def cargar_salidas():
+    global departures_list
+    archivo = filedialog.askopenfilename(
+        title="Seleccione un archivo de salidas",
+        filetypes=(("Archivos CSV", "*.txt"), ("Todos los archivos", "*.*"))
+    )
+    if not archivo:
+        return None
+    departures_list = LoadDepartures(archivo)
+    if len(departures_list) > 0:
+        messagebox.showinfo('Salidas cargadas', f'Se han cargado {len(departures_list)} salidas')
+    else:
+        messagebox.showwarning('Sin datos', 'El archivo no contenía datos de salidas')
+    return None
+def fusionar_movimientos():
+    global aircrafts, departures_list
+    if len(aircrafts) == 0:
+        messagebox.showerror('Error', 'No hay vuelos de llegada cargados')
+        return None
+    if len(departures_list) == 0:
+        messagebox.showerror('Error', 'No hay vuelos de salida cargados')
+        return None
+    resultado = MergeMovements(aircrafts, departures_list)
+    if resultado == -1:
+        messagebox.showerror('Error', 'Error al fusionar: listas vacías')
+        return None
+    aircrafts = resultado
+    mostrar_vuelos()
+    messagebox.showinfo('Fusión completada', f'Se han fusionado los movimientos. Total: {len(aircrafts)} aeronaves')
+    return None
+
 def exportar_vuelos():
     archivo = filedialog.askopenfilename(
         title="Seleccione un archivo .txt",
@@ -577,9 +613,10 @@ frame_v2.grid_rowconfigure(2, weight=1)
 
 # ------ CARGAR/EXPORTAR VUELOS VUELOS ------
 
-frame_gestionvuelos = tk.LabelFrame(frame_v2, text="Cargar/Exportar vuelos")
+frame_gestionvuelos = tk.LabelFrame(frame_v2, text="Cargar/Exportar llegadas")
 frame_gestionvuelos.grid(row = 0, column = 0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_gestionvuelos.grid_rowconfigure(0, weight=1)
+frame_gestionvuelos.grid_rowconfigure(2, weight=1)
 frame_gestionvuelos.grid_columnconfigure(0, weight=1)
 frame_gestionvuelos.grid_columnconfigure(1, weight=1)
 
@@ -588,6 +625,15 @@ boton_cargarvuelos.grid(row=0, column=0, padx=(5,0), pady=5, sticky=tk.N + tk.S 
 
 boton_exportarvuelos = tk.Button(frame_gestionvuelos, text="Exportar vuelos", command=exportar_vuelos)
 boton_exportarvuelos.grid(row=0, column=1, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+
+separador_fusion = ttk.Separator(frame_gestionvuelos, orient="horizontal")
+separador_fusion.grid(row=1, column=0, columnspan=2, sticky=tk.W + tk.E, padx=5, pady=2)
+
+boton_cargarsalidas = tk.Button(frame_gestionvuelos, text="Cargar salidas", command=cargar_salidas)
+boton_cargarsalidas.grid(row=2, column=0, padx=(5,0), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+
+boton_fusionar = tk.Button(frame_gestionvuelos, text="Combinar Salidas y Llegadas", command=fusionar_movimientos)
+boton_fusionar.grid(row=2, column=1, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 # ------ FRAME GRAFICOS VUELOS ------
 
