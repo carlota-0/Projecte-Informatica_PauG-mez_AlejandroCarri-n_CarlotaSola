@@ -480,6 +480,30 @@ def MostrarMapaInteractivo(bcn, aircrafts):
 
 
 
+def earth_aeropuertos_misma_letra():
+    if aeropuertos:  # Comprobamos que la lista general no esté vacía
+        aeropuertos_filtrados = [] #Con este bucle nos quedaremos solamente con los aeropuertos que nos interesan
+        for element in range(len(aeropuertos)):
+            icao=aeropuertos[element].ICAO
+            if icao[0] == icao[-1]: #comprobamos si la primera y la última letra son iguales
+                aeropuertos_filtrados.append(aeropuertos[element]) #añadimos el aeropuerto encontrado a la lista vacía
+        if len(aeropuertos_filtrados) > 0: #se hace solamente si hemos logrado encontrar un aeropuerto
+            try:
+                MapAirports(aeropuertos_filtrados)
+                archivo = "Ubicaciones.kml"
+                if sys.platform == "win32":
+                    os.startfile(archivo)
+                elif sys.platform == "darwin":
+                    subprocess.call(["open", archivo])
+            except (OSError, subprocess.SubprocessError):
+                messagebox.showerror(title='Error',
+                                     message='No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Ubicaciones.kml\"')
+        else:
+            messagebox.showinfo(title='Información',
+                                message='No hay aeropuertos cuyo ICAO empiece y acabe por la misma letra')
+
+    else:
+        messagebox.showerror(title='Error', message='Lista de aeropuertos vacía')
 # ------ CONFIGURACION VENTANA ------
 
 window = Tk()
@@ -578,6 +602,8 @@ boton_kml.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.S + tk.E 
 boton_schengen = tk.Button(frame_visualizacion, text="Guardar aeropuertos Schengen en .txt", command=archivo_Schengen)
 boton_schengen.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W, columnspan=2)
 
+boton_misma_letra = tk.Button(frame_visualizacion, text="Google Earth: ICAO misma letra", command=earth_aeropuertos_misma_letra)
+boton_misma_letra.grid(row=2, column=0, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W, columnspan=2)
 # ------ FRAME LISTADO AEROPUERTOS ------
 
 frame_listado = tk.LabelFrame(frame_v1, text="Listado aeropuertos")
