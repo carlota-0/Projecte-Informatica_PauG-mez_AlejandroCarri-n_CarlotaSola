@@ -300,7 +300,17 @@ def mostrar_puertas():
                 else:
                     listadopuertas.insert(tk.END,f'{bcn.terminals[j].Boarding_area[i].Gate[k].name}\t\t({bcn.terminals[j].Boarding_area[i].area})\t\tLibre')
     return None
-
+def asignar_puertas_nocturnas():
+    if not aircrafts or not bcn:
+        messagebox.showerror('Error', 'Listado de aviones vacío o falta estructura del aeropuerto')
+    else:
+        resultado = AssignNightGates(bcn, aircrafts)
+        if resultado == -1:
+            messagebox.showerror('Error', 'Error al asignar puertas nocturnas')
+        else:
+            messagebox.showinfo('Puertas nocturnas', f'Se asignaron {resultado} puertas a aviones nocturnos')
+        mostrar_puertas()
+    return None
 
 #Funcion V4
 
@@ -707,6 +717,7 @@ frame_puertas = tk.LabelFrame(frame_v3, text="Gestión")
 frame_puertas.grid(row = 0, column = 0, padx = 10, pady=(0,5), sticky = tk.N + tk.S + tk.E + tk.W)
 frame_puertas.grid_rowconfigure(0, weight=1)
 frame_puertas.grid_rowconfigure(1, weight=1)
+frame_puertas.grid_rowconfigure(2, weight=1)
 frame_puertas.grid_columnconfigure(0, weight=1)
 frame_puertas.grid_columnconfigure(1, weight=1)
 
@@ -717,10 +728,9 @@ boton_estructura.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S 
 
 boton_asignarpuerta = tk.Button(frame_puertas, text="Asignar puerta a cada vuelo", command=asignar_puertas)
 boton_asignarpuerta.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
-'''
-boton_mostrarocupacion = tk.Button(frame_puertas, text="Mostrar ocupación puertas", command=mostrar_ocupacion)
-boton_mostrarocupacion.grid(row = 0, column = 1, padx=5, pady=5, rowspan=2, sticky = tk.N + tk.S + tk.E + tk.W)
-'''
+
+boton_puertasnocturnas = tk.Button(frame_puertas, text="Asignar puertas nocturnas", command=asignar_puertas_nocturnas)
+boton_puertasnocturnas.grid(row = 2, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 # ------ FRAME LISTADO PUERTAS ------
 
 frame_listadopuertas = tk.LabelFrame(frame_v3, text="Listado puertas")

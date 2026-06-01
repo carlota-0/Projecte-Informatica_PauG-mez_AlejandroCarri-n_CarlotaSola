@@ -360,7 +360,20 @@ def AssignNightGates(bcn, aircrafts):  # [Pau]
     does not meet the condition then skip to the following aircraft in list. If
     the input list is empty return an error code.
     '''
-    return None
+    if len(aircrafts) == 0:
+        return -1
+
+    assigned = 0
+    i = 0
+    while i < len(aircrafts):
+        # Solo asignar puerta a aviones que NO tengan datos de llegada (solo salida)
+        if aircrafts[i].time_of_landing == "" and aircrafts[i].origin_airport == "":
+            resultado = AssignGate(bcn, aircrafts[i])
+            if resultado is True:
+                assigned += 1
+        i += 1
+
+    return assigned
 
 
 def AssignGatesAtTime(bcn, aircrafts, time):
