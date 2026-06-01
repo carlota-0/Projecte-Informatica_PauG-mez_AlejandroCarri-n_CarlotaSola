@@ -2,17 +2,18 @@ import math
 from airport import *
 
 class Aircraft:
-    def __init__(self, id, company, origin_airport, time_of_landing):
-        self.id=id
-        self.company=company
-        self.origin_airport=origin_airport
-        self.time_of_landing=time_of_landing
-
-def __repr__(self):
-    return f"[{self.id} - {self.company} - {self.origin_airport} - {self.time_of_landing}]"
+    def __init__(self, id, company, origin_airport="", time_of_landing="", destination_airport="", time_of_departure=""):
+        self.id = id
+        self.company = company
+        self.origin_airport = origin_airport
+        self.time_of_landing = time_of_landing
+        self.destination_airport = destination_airport
+        self.time_of_departure = time_of_departure
 
 def LoadArrivals (filename):
+    #incializar la lista que se devuelve con todas las llegadas
     Arrivals = []
+    #hacer un recorrido de todas las líneas del fichero que contiene las llegas y extraer su informacion para construir un objeto Aircraft y añadirlo a la lista de Arrivals
     try:
         fitxer = open(filename, 'r')
         fitxer.readline()
@@ -27,10 +28,42 @@ def LoadArrivals (filename):
             Arrivals.append(informacion)
             linea = fitxer.readline()
         fitxer.close()
-
+    #en caso de no existir el archivo se devuelve una lista vacía, si existe entonces se devuelve Aircrafts
     except FileNotFoundError:
         return []
     return Arrivals
+
+def LoadDepartures(filename):
+    # incializar la lista que se devuelve con todas las salidas
+    Departures = []
+    #hacer un recorrido de todas las líneas del fichero que contiene las salidas y extraer su informacion para construir un objeto Aircraft y añadirlo a la lista de Departures
+    try:
+        fitxer = open(filename, 'r')
+        fitxer.readline()  # Skip the header line
+        linea = fitxer.readline()
+
+        while linea != '':
+            elements = linea.split()
+
+            # Comprobamos que la línea tiene al menos 4 datos antes de leer
+            if len(elements) >= 4:
+                id = str(elements[0])
+                destination_airport = str(elements[1])
+                time_of_departure = str(elements[2])
+                company = str(elements[3])
+
+                # Initialize the aircraft leaving the arrival parameters empty
+                informacion = Aircraft(id, company, origin_airport="", time_of_landing="", destination_airport=destination_airport, time_of_departure=time_of_departure)
+                Departures.append(informacion)
+
+            linea = fitxer.readline()
+
+        fitxer.close()
+    #en caso de no existir el archivo se devuelve una lista vacía, si existe entonces se devuelve Departures
+    except FileNotFoundError:
+        return []
+
+    return Departures
 
 def SaveFlights(aircrafts, filename):
     fitxer = open(filename, 'w')
@@ -43,7 +76,6 @@ def PlotFlightsType(aircrafts):
     ''' Receives a list of aircraft and shows a stacked bar plot of the number of
     flights arriving from Schengen countries and the number of non-Schengen
     '''
-
     schengen = 0
     #contar Schengen
     for i in range (len(aircrafts)):
@@ -51,7 +83,7 @@ def PlotFlightsType(aircrafts):
             schengen += 1
     #definir no Schengen
     noSchengen = len(aircrafts)-schengen
-
+    #crear un gráfico de una sola columna apilada donde se muestran la cantidad de vuelos schengen y no schengen
     fig = Figure()
     ax = fig.add_subplot(111)
 
@@ -67,18 +99,19 @@ def PlotFlightsType(aircrafts):
 
 def PlotArrivals(aircrafts):
     try:
+        #definir una lista Horas y llenarla con los números del 0 al 23 (24h ya son las Oh del día siguiente)
         horas = []
         for i in range (24):
             horas.append(i)
-
+        #definir una lista vuelos donde se cuentan el número de vuelos que hay por franja de horas 0-1, 1-2...
         vols = [0] * len(horas)
-
+        #contar vuelos por hora
         for i in range (len(aircrafts)):
             horacompleta = aircrafts[i].time_of_landing
             horacompleta = horacompleta.split(":")
             hora = int(horacompleta[0])
             vols[hora] = vols[hora] + 1
-
+        #definir el gráfico
         fig = Figure()
         ax = fig.add_subplot(111)
 
@@ -97,7 +130,7 @@ def PlotArrivals(aircrafts):
         print("Error en los datos")
 
 def PlotAirlines(aircrafts):
-
+    #definir una lista con todas las aerolíneas distintas
     aerolineas = []
 
     for i in range (len(aircrafts)):
@@ -110,7 +143,7 @@ def PlotAirlines(aircrafts):
                 k += 1
         if not encontrado:
             aerolineas.append(aircrafts[i].company)
-
+    #contar vuelos de cada aerolínea
     vols = [0] * len(aerolineas)
 
     for i in range (len(aerolineas)):
@@ -118,9 +151,7 @@ def PlotAirlines(aircrafts):
             if aircrafts[k].company == aerolineas[i]:
                 vols[i] += 1
 
-
-
-
+    #definir gráfico
     fig = Figure()
     ax = fig.add_subplot(111)
 
@@ -140,14 +171,15 @@ def MapFlights(aircrafts, airports):
     in a Schengen country. Remember that Annex A explains how to draw lines in
     Google Earth.
     '''
-
+    #coordenades LEBL
     lonLEBL = 2.08
     latLEBL = 41.30
-
+    #inicializar fichero kml + defnir estilos
     fitxer = open("Vuelos.kml", "w")
     fitxer.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n\t<Document>\n')
     fitxer.write('<Style id="color_schengen"><LineStyle><color>ff00ff00</color><width>2</width></LineStyle></Style>\n')
     fitxer.write('<Style id="color_noschengen"><LineStyle><color>ff0000ff</color><width>2</width></LineStyle></Style>\n')
+    #recorrido de la lista de aviones donde se mira si el aeropuerto de origen es schengen o no para dibujar una línea de un color u otro (se verifica que el aeropuerto esté en el listado)
     for i in range (len(aircrafts)):
         origen = str(aircrafts[i].origin_airport)
 
@@ -181,7 +213,7 @@ def MapFlights(aircrafts, airports):
                          f'\t\t</Placemark>\n')
         elif not encontrado:
             print(f'{aircrafts[i].origin_airport}, de l avió {aircrafts[i]} no està a la llista d aeroports')
-
+    #cieere documento
     fitxer.write('\t</Document>\n</kml>')
     fitxer.close()
 
@@ -192,13 +224,13 @@ def LongDistanceArrivals(aircrafts,airports):
     You will need a function to compute the Haversine3 distance between two
     coordinates.
     '''
-
+    #coordenadas LEBL convertidas a radianes + radio de la tierra en metros
     lonLEBL = math.radians(2.08)
     latLEBL = math.radians(41.30)
     r = 6371
-
+    #inicializar lista que será el resultado de la función donde estarán todos los vuelos de larga distancia
     largaDistancia = []
-
+    #recorrer toda las lista de vuelos y buscar primero si el aeropuerto está dentro del listaod de aeropuertos o no y después calcular su distancia a LEBL; si es mayor a 2000km se añade a la lista
     for i in range(len(aircrafts)):
         origen = str(aircrafts[i].origin_airport)
 
@@ -228,7 +260,7 @@ def LongDistanceArrivals(aircrafts,airports):
                 largaDistancia.append(aircrafts[i])
         elif not encontrado:
             print(f'{aircrafts[i].origin_airport}, de l avió {aircrafts[i]} no està a la llista d aeroports')
-
+    #la función devuelve una nueva lista con los vuelos de larga distáncia
     return largaDistancia
 
 def MergeMovements (arrivals, departures): #[Pau]
@@ -311,6 +343,3 @@ def PlotAirlinesSignificatives(aircrafts):
 '''
 
 # test section
-if __name__ == "__main__":
-    aircrafts = LoadArrivals ("Arrivals.txt")
-    PlotArrivals (aircrafts)
