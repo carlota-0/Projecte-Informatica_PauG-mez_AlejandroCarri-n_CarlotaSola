@@ -326,7 +326,8 @@ def PlotDayOccupancy(bcn, aircrafts):
 def MostrarMapaInteractivo(bcn, aircrafts):
     """
     Muestra un mapa interactivo con un Slider para las horas y un selector
-    de Terminal (T1 / T2) para ver el estado de ocupación (Rojo/Verde).
+    de Terminal (T1 / T2) que utiliza la función lógica del grupo (AssignGatesAtTime)
+    de forma secuencial y limpia para actualizar el estado de ocupación.
     """
     import matplotlib.pyplot as plt
     from matplotlib.widgets import Slider, RadioButtons
@@ -337,12 +338,12 @@ def MostrarMapaInteractivo(bcn, aircrafts):
         messagebox.showerror('Error', 'Primero debes cargar el aeropuerto y los vuelos.')
         return
 
-    # Creamos la figura y dejamos espacio abajo para el slider y a la izquierda para el selector de terminal
+    # Creamos la figura y ajustamos márgenes para los controles interactivos
     fig, ax = plt.subplots(figsize=(11, 6))
     plt.subplots_adjust(bottom=0.2, left=0.2)
 
-    # Variables de estado iniciales
-    terminal_actual = bcn.terminals[0].name  # Por defecto la primera terminal (T1)
+    # Variables de estado que rastrean lo que el usuario ve en pantalla
+    terminal_actual = bcn.terminals[0].name  # Por defecto la T1
     hora_actual_int = 12  # Por defecto las 12:00
 
     def simular_y_dibujar():
@@ -353,75 +354,54 @@ def MostrarMapaInteractivo(bcn, aircrafts):
         ax.set_ylim(-1, 8)
         ax.axis('off')
 
-        # 1. RESETEAR TODAS LAS PUERTAS DE TODAS LAS TERMINALES
+        # 1. RESETEAR TODAS LAS PUERTAS A SU ESTADO VACÍO ANTES DE COMENZAR EL DÍA
         for t in bcn.terminals:
             for area in getattr(t, 'Boarding_area', []):
                 for g in getattr(area, 'Gate', []):
                     g.occupied = False
                     g.aircraft_id = ""
 
-        # 2. SIMULAR ESTADO HASTA LA HORA SELECCIONADA
+        # 2. SIMULAR EL PASO DEL TIEMPO HORA A HORA SECUENCIALMENTE
+        # Pasamos por cada hora de forma independiente para que no se dupliquen asignaciones
         for h in range(hora_actual_int + 1):
             hora_str = f"{str(h).zfill(2)}:00"
 
-            # Liberar aviones que salen
-            for ac in aircrafts:
-                ac_id = getattr(ac, 'id', getattr(ac, 'ID', None))
-                ac_dep = getattr(ac, 'time_of_departure', None)
-                if ac_dep and ac_dep.split(":")[0] + ":00" == hora_str:
-                    for t in bcn.terminals:
-                        for area in getattr(t, 'Boarding_area', []):
-                            for g in getattr(area, 'Gate', []):
-                                if g.aircraft_id == ac_id:
-                                    g.occupied = False
-                                    g.aircraft_id = ""
+            # Ejecutamos la lógica de asignación y liberación de esa hora concreta
+            try:
+                AssignGatesAtTime(bcn, aircrafts, hora_str)
+            except Exception as e:
+                # Evita que un error bloquee el renderizado del gráfico
+                pass
 
-            # Ocupar aviones que llegan
-            for ac in aircrafts:
-                ac_id = getattr(ac, 'id', getattr(ac, 'ID', None))
-                ac_arr = getattr(ac, 'time_of_landing', None)
-                if ac_arr and ac_arr.split(":")[0] + ":00" == hora_str:
-                    asignado = False
-                    for t in bcn.terminals:
-                        for area in getattr(t, 'Boarding_area', []):
-                            for g in getattr(area, 'Gate', []):
-                                if not g.occupied and not asignado:
-                                    g.occupied = True
-                                    g.aircraft_id = ac_id
-                                    asignado = True
-
-        # 3. OBTENER LA TERMINAL ACTIVA PARA DIBUJARLA
+        # 3. OBTENER LA TERMINAL QUE EL USUARIO HA SELECCIONADO PARA DIBUJARLA
         t_obj = next((t for t in bcn.terminals if t.name == terminal_actual), bcn.terminals[0])
         lista_areas = getattr(t_obj, 'Boarding_area', [])
 
         # Dibujar pasillo principal superior
         ax.plot([0, 9], [7, 7], color='#1a5f7a', linewidth=8)
 
-        # Posiciones X fijas para representar hasta 3 áreas de embarque en el dibujo
+        # Posiciones en el eje X para representar las áreas de embarque
         columnas_x = [1.5, 4.5, 7.5]
 
-        # Recorremos las áreas reales que tenga esta terminal (máximo 3 en el dibujo)
         for i, area in enumerate(lista_areas):
-            if i >= 3: break  # Límite visual del dibujo
+            if i >= 3: break  # Límite visual de la ventana de dibujo
 
             x = columnas_x[i]
             nombre_area = getattr(area, 'name', f"Area {i + 1}")
 
-            # Dibujar eje/pasillo vertical del área
+            # Dibujar el pasillo vertical del muelle de embarque
             ax.plot([x, x], [1, 7], color='#1a5f7a', linewidth=10)
             ax.text(x, 0.5, nombre_area, ha='center', fontsize=12, fontweight='bold')
 
             lista_puertas = getattr(area, 'Gate', [])
 
-            # Dibujar hasta 6 puertas por área (3 izquierda, 3 derecha)
+            # Dibujar hasta 6 puertas por cada área
             for p_idx, gate in enumerate(lista_puertas):
                 if p_idx >= 6: break
 
-                # Determinar si va a la izquierda (0,2,4) o a la derecha (1,3,5)
                 es_izquierda = (p_idx % 2 == 0)
                 fila_y = [5.5, 3.5, 1.5][p_idx // 2]
 
-                # Dibujar bracito de la puerta
                 if es_izquierda:
                     ax.plot([x - 0.6, x], [fila_y, fila_y], color='#1a5f7a', linewidth=4)
                     x_rect = x - 1.2
@@ -433,39 +413,37 @@ def MostrarMapaInteractivo(bcn, aircrafts):
                     ha_text = 'left'
                     x_text = x + 1.3
 
-                # Color según estado real de la puerta simulada
+                # Capturar el estado de ocupación calculado
                 is_occupied = getattr(gate, 'occupied', False) or getattr(gate, 'Occupied', False)
                 ac_label = getattr(gate, 'aircraft_id', '') if is_occupied else ""
 
-                color = 'red' if is_occupied else '#10b981'  # Rojo ocupado, Verde libre
+                # Color del avión según el estado: Rojo (ocupado) o Verde (libre)
+                color = 'red' if is_occupied else '#10b981'
 
-                # Dibujar rectángulo de la puerta
+                # Pintar el rectángulo de la puerta
                 rect = patches.Rectangle((x_rect, fila_y - 0.2), 0.5, 0.4, linewidth=1, facecolor=color)
                 ax.add_patch(rect)
 
-                # Si hay avión, pintar su ID al lado
+                # Si hay una aeronave asignada, pintar su matrícula
                 if ac_label:
                     ax.text(x_text, fila_y, ac_label, ha=ha_text, va='center', fontsize=8, color='black',
                             fontweight='bold')
 
         fig.canvas.draw_idle()
 
-    # --- CONFIGURAR EL SLIDER DE HORA (Abajo) ---
+    # --- CONTROLES INTERACTIVOS DE MATPLOTLIB ---
     ax_slider = plt.axes([0.25, 0.05, 0.55, 0.03], facecolor='lightgray')
     slider_hora = Slider(ax_slider, 'Hora', 0, 23, valinit=12, valfmt='%02d:00')
 
-    # --- CONFIGURAR EL SELECTOR DE TERMINAL (Izquierda) ---
     ax_radio = plt.axes([0.02, 0.4, 0.12, 0.2], facecolor='lightgray')
     nombres_terminales = [t.name for t in bcn.terminals]
     radio_terminal = RadioButtons(ax_radio, nombres_terminales)
 
-    # Evento al mover el Slider
     def update_slider(val):
         nonlocal hora_actual_int
         hora_actual_int = int(slider_hora.val)
         simular_y_dibujar()
 
-    # Evento al cambiar de Terminal
     def update_radio(label):
         nonlocal terminal_actual
         terminal_actual = label
@@ -474,10 +452,9 @@ def MostrarMapaInteractivo(bcn, aircrafts):
     slider_hora.on_changed(update_slider)
     radio_terminal.on_clicked(update_radio)
 
-    # Render inicial
+    # Dibujamos el estado inicial
     simular_y_dibujar()
     plt.show()
-
 
 
 # ------ CONFIGURACION VENTANA ------
@@ -742,7 +719,6 @@ boton_grafico_v4 = tk.Button(frame_puertas, text="Gráfico Ocupación 24h (V4)",
 boton_grafico_v4.grid(row=0, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 boton_mapa_interactivo = tk.Button(frame_puertas, text="Ver Mapa Puertas Ocupadas (Slider)", command=lambda: MostrarMapaInteractivo(bcn, aircrafts))
-# Lo colocamos en la columna 1, debajo del botón de mostrar ocupación
 boton_mapa_interactivo.grid(row=1, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 window.mainloop()
