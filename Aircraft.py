@@ -183,8 +183,8 @@ def MapFlights(aircrafts, airports):
     try:
         fitxer = open("Vuelos.kml", "w")
         fitxer.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n\t<Document>\n')
-        fitxer.write('<Style id="color_schengen"><LineStyle><color>ff00ff00</color><width>2</width></LineStyle></Style>\n')
-        fitxer.write('<Style id="color_noschengen"><LineStyle><color>ff0000ff</color><width>2</width></LineStyle></Style>\n')
+        fitxer.write('<Style id="color_schengen"><LineStyle><color>ff738B45</color><width>2</width></LineStyle></Style>\n')
+        fitxer.write('<Style id="color_noschengen"><LineStyle><color>ff7660F2</color><width>2</width></LineStyle></Style>\n')
         #recorrido de la lista de aviones donde se mira si el aeropuerto de origen es schengen o no para dibujar una línea de un color u otro (se verifica que el aeropuerto esté en el listado)
         for i in range (len(aircrafts)):
             origen = str(aircrafts[i].origin_airport)

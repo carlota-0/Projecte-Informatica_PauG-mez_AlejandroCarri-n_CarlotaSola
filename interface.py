@@ -9,6 +9,8 @@ from tkinter import filedialog
 import os
 import sys
 import subprocess
+from tkintermapview import TkinterMapView
+import xml.etree.ElementTree as ET
 
 aircrafts = []
 departures_list = []
@@ -106,21 +108,108 @@ def archivo_Schengen():
     else:
         messagebox.showwarning('Archivo no guardado', 'No hay aeropuertos para guardar')
     return None
-def map_airports():
-    #mostrar aeropuertos en Google Earth
-    if aeropuertos:
-        try:
-            if not MapAirports(aeropuertos):
-                messagebox.showerror('Error', 'No se pudo crear el archivo KML')
-                return
+def mostrar_kml_en_mapa(kml_file):
+    global canvas_graficos
+    if not os.path.exists(kml_file):
+        messagebox.showerror('Error', f'No se encontró el archivo {kml_file}')
+        return
+    if not isinstance(canvas_graficos, TkinterMapView):
+        canvas_graficos.grid_forget()
+        canvas_graficos = TkinterMapView(frame_graficos, corner_radius=0)
+        canvas_graficos.grid(row=0, column=0, padx=5, pady=5, sticky=tk.N+tk.S+tk.E+tk.W)
+        canvas_graficos.set_position(41.30, 2.08)
+        canvas_graficos.set_zoom(4)
+    else:
+        canvas_graficos.grid()
+    if messagebox.askyesno('Limpiar mapa', '¿Quiere borrar el contenido actual del mapa antes de mostrar el nuevo?'):
+        canvas_graficos.delete_all_marker()
+        canvas_graficos.delete_all_path()
+    try:
+        tree = ET.parse(kml_file)
+        root = tree.getroot()
+        ns = {'kml': 'http://www.opengis.net/kml/2.2'}
+        latitudes = []
+        longitudes = []
+        for placemark in root.findall('.//kml:Placemark', ns):
+            name_elem = placemark.find('kml:name', ns)
+            name = name_elem.text if name_elem is not None else ''
+            style_elem = placemark.find('kml:styleUrl', ns)
+            es_schengen = style_elem is not None and 'color_schengen' in style_elem.text.lower()
+            point = placemark.find('.//kml:Point', ns)
+            line = placemark.find('.//kml:LineString', ns)
+            if point is not None:
+                coords_elem = point.find('kml:coordinates', ns)
+                if coords_elem is not None and coords_elem.text:
+                    parts = coords_elem.text.strip().split(',')
+                    if len(parts) >= 2:
+                        try:
+                            lon, lat = float(parts[0]), float(parts[1])
+                            if es_schengen:
+                                canvas_graficos.set_marker(lat, lon, text=name,
+                                    marker_color_outside="#458B73", marker_color_circle="#2D6B50")
+                            else:
+                                canvas_graficos.set_marker(lat, lon, text=name,
+                                    marker_color_outside="#F26076", marker_color_circle="#C04050")
+                            latitudes.append(lat)
+                            longitudes.append(lon)
+                        except ValueError:
+                            pass
+            elif line is not None:
+                coords_elem = line.find('kml:coordinates', ns)
+                if coords_elem is not None and coords_elem.text:
+                    path_coords = []
+                    for line_coord in coords_elem.text.strip().split():
+                        line_coord = line_coord.strip()
+                        if line_coord:
+                            parts = line_coord.split(',')
+                            if len(parts) >= 2:
+                                try:
+                                    lon, lat = float(parts[0]), float(parts[1])
+                                    path_coords.append((lat, lon))
+                                    latitudes.append(lat)
+                                    longitudes.append(lon)
+                                except ValueError:
+                                    pass
+                    if len(path_coords) >= 2:
+                        if es_schengen:
+                            canvas_graficos.set_path(path_coords, color="#458B73", width=3)
+                        else:
+                            canvas_graficos.set_path(path_coords, color="#F26076", width=3)
+        if latitudes and longitudes:
+            lat_centro = (min(latitudes) + max(latitudes)) / 2
+            lon_centro = (min(longitudes) + max(longitudes)) / 2
+            canvas_graficos.set_position(lat_centro, lon_centro)
+            dlat = max(latitudes) - min(latitudes)
+            dlon = max(longitudes) - min(longitudes)
+            zoom = 10
+            if dlat > 10 or dlon > 10:
+                zoom = 4
+            elif dlat > 3 or dlon > 3:
+                zoom = 5
+            elif dlat > 1 or dlon > 1:
+                zoom = 6
+            else:
+                zoom = 7
+            canvas_graficos.set_zoom(zoom)
+    except ET.ParseError:
+        messagebox.showerror('Error', f'Error al leer el archivo KML: {kml_file}')
 
-            archivo = "Ubicaciones.kml"
-            if sys.platform == "win32":
-                os.startfile(archivo)
-            elif sys.platform == "darwin":
-                subprocess.call(["open", archivo])
-        except (OSError, subprocess.SubprocessError):
-            messagebox.showerror('Error','No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Ubicaciones.kml\"')
+def map_airports():
+    #mostrar aeropuertos en el mapa (KML)
+    if aeropuertos:
+        if not MapAirports(aeropuertos):
+            messagebox.showerror('Error', 'No se pudo crear el archivo KML')
+            return
+        mostrar_kml_en_mapa("Ubicaciones.kml")
+        # Código original para abrir Google Earth (comentado por si se quiere recuperar)
+        # try:
+        #     archivo = "Ubicaciones.kml"
+        #     if sys.platform == "win32":
+        #         os.startfile(archivo)
+        #     elif sys.platform == "darwin":
+        #         subprocess.call(["open", archivo])
+        # except (OSError, subprocess.SubprocessError):
+        #     messagebox.showerror('Error','No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Ubicaciones.kml\"')
     else:
         messagebox.showerror('Error','Lista de aeropuertos vacía')
 def limpiar_formulario():
@@ -360,33 +449,35 @@ def grafico_vuelosPorLlegada():
     else:
         messagebox.showerror('Error','La lista de vuelos está vacía')
 def earth_largaDistancia():
-    #mostrar vuelos de larga distancia en Google Earth
+    #mostrar vuelos de larga distancia en el mapa (KML)
     if aircrafts and aeropuertos:
-        try:
-            MapFlights(LongDistanceArrivals(aircrafts,aeropuertos), aeropuertos)
-
-            archivo = "Vuelos.kml"
-            if sys.platform == "win32":
-                os.startfile(archivo)
-            elif sys.platform == "darwin":
-                subprocess.call(["open", archivo])
-        except (OSError, subprocess.SubprocessError):
-            messagebox.showerror('Error','No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Vuelos.kml\"')
+        MapFlights(LongDistanceArrivals(aircrafts,aeropuertos), aeropuertos)
+        mostrar_kml_en_mapa("Vuelos.kml")
+        # Código original para abrir Google Earth (comentado por si se quiere recuperar)
+        # try:
+        #     archivo = "Vuelos.kml"
+        #     if sys.platform == "win32":
+        #         os.startfile(archivo)
+        #     elif sys.platform == "darwin":
+        #         subprocess.call(["open", archivo])
+        # except (OSError, subprocess.SubprocessError):
+        #     messagebox.showerror('Error','No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Vuelos.kml\"')
     else:
         messagebox.showerror('Error', 'Faltan los datos de los vuelos, los datos de los aeropuertos o ambos')
 def earth_vuelos():
-    #mostrar todos los vuelos en Google Earth
+    #mostrar todos los vuelos en el mapa (KML)
     if aircrafts and aeropuertos:
-        try:
-            MapFlights(aircrafts, aeropuertos)
-
-            archivo = "Vuelos.kml"
-            if sys.platform == "win32":
-                os.startfile(archivo)
-            elif sys.platform == "darwin":
-                subprocess.call(["open", archivo])
-        except (OSError, subprocess.SubprocessError):
-            messagebox.showerror('Error','No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Vuelos.kml\"')
+        MapFlights(aircrafts, aeropuertos)
+        mostrar_kml_en_mapa("Vuelos.kml")
+        # Código original para abrir Google Earth (comentado por si se quiere recuperar)
+        # try:
+        #     archivo = "Vuelos.kml"
+        #     if sys.platform == "win32":
+        #         os.startfile(archivo)
+        #     elif sys.platform == "darwin":
+        #         subprocess.call(["open", archivo])
+        # except (OSError, subprocess.SubprocessError):
+        #     messagebox.showerror('Error','No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Vuelos.kml\"')
     else:
         messagebox.showerror('Error','Faltan los datos de los vuelos, los datos de los aeropuertos o ambos')
 
@@ -642,23 +733,25 @@ def MostrarMapaInteractivo(bcn, aircrafts):
     simular_y_draw()
     plt.show()
 def earth_aeropuertos_misma_letra():
-    if aeropuertos:  # Comprobamos que la lista general no esté vacía
-        aeropuertos_filtrados = [] #Con este bucle nos quedaremos solamente con los aeropuertos que nos interesan
+    if aeropuertos:
+        aeropuertos_filtrados = []
         for element in range(len(aeropuertos)):
-            icao=aeropuertos[element].ICAO
-            if icao[0] == icao[-1]: #comprobamos si la primera y la última letra son iguales
-                aeropuertos_filtrados.append(aeropuertos[element]) #añadimos el aeropuerto encontrado a la lista vacía
-        if len(aeropuertos_filtrados) > 0: #se hace solamente si hemos logrado encontrar un aeropuerto
-            try:
-                MapAirports(aeropuertos_filtrados)
-                archivo = "Ubicaciones.kml"
-                if sys.platform == "win32":
-                    os.startfile(archivo)
-                elif sys.platform == "darwin":
-                    subprocess.call(["open", archivo])
-            except (OSError, subprocess.SubprocessError):
-                messagebox.showerror(title='Error',
-                                     message='No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Ubicaciones.kml\"')
+            icao = aeropuertos[element].ICAO
+            if icao[0] == icao[-1]:
+                aeropuertos_filtrados.append(aeropuertos[element])
+        if len(aeropuertos_filtrados) > 0:
+            MapAirports(aeropuertos_filtrados)
+            mostrar_kml_en_mapa("Ubicaciones.kml")
+            # Código original para abrir Google Earth (comentado por si se quiere recuperar)
+            # try:
+            #     archivo = "Ubicaciones.kml"
+            #     if sys.platform == "win32":
+            #         os.startfile(archivo)
+            #     elif sys.platform == "darwin":
+            #         subprocess.call(["open", archivo])
+            # except (OSError, subprocess.SubprocessError):
+            #     messagebox.showerror(title='Error',
+            #                          message='No tienes Google Earth instalado, prueba a abrirlo en el navegador y cargar el archivo \"Ubicaciones.kml\"')
         else:
             messagebox.showinfo(title='Información',
                                 message='No hay aeropuertos cuyo ICAO empiece y acabe por la misma letra')
@@ -855,8 +948,10 @@ frame_graficos = tk.LabelFrame(window, text="Visualización gráficos")
 frame_graficos.grid(row = 0, column = 1, padx = (0,10), pady=5, rowspan = 3, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_graficos.grid_columnconfigure(0, weight=1)
 frame_graficos.grid_rowconfigure(0, weight=1)
-canvas_graficos = tk.Canvas(frame_graficos)
+canvas_graficos = TkinterMapView(frame_graficos, corner_radius=0)
 canvas_graficos.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
+canvas_graficos.set_position(41.30, 2.08)
+canvas_graficos.set_zoom(4)
 
 # ------ FRAME VERSIO1 ------
 

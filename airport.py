@@ -202,8 +202,8 @@ def MapAirports (airports):
     try:
         fitxer = open("Ubicaciones.kml", "w")
         fitxer.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n\t<Document>\n')
-        fitxer.write('<Style id="color_schengen"><IconStyle><color>ff00ff00</color></IconStyle></Style>\n')
-        fitxer.write('<Style id="color_noschengen"><IconStyle><color>ff0000ff</color></IconStyle></Style>\n')
+        fitxer.write('<Style id="color_schengen"><IconStyle><color>ff738B45</color></IconStyle></Style>\n')
+        fitxer.write('<Style id="color_noschengen"><IconStyle><color>ff7660F2</color></IconStyle></Style>\n')
         #recorrido para escribir el archivo de cada elemento en la lista de aeropuertos que identifica sus coordenadas para ubicarlo en el mapa y su ICAO + la funcion de IsSchengen para definir el estilo gráfico de la aguja
         for i in range (len(airports)):
             icao = str(airports[i].ICAO)
