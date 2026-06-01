@@ -732,7 +732,7 @@ def MostrarMapaInteractivo(bcn, aircrafts):
     # Lanzamiento inicial
     simular_y_draw()
     plt.show()
-def earth_aeropuertos_misma_letra():
+'''def earth_aeropuertos_misma_letra():
     if aeropuertos:
         aeropuertos_filtrados = []
         for element in range(len(aeropuertos)):
@@ -758,6 +758,7 @@ def earth_aeropuertos_misma_letra():
 
     else:
         messagebox.showerror(title='Error', message='Lista de aeropuertos vacía')
+'''
 def cambiar_tema(color_fondo, color_boton):
     # 1. Pintar el fondo de la ventana principal
     window.config(bg=color_fondo)
@@ -931,6 +932,7 @@ def tema_defecto():
 
 
 # ------ MENÚ SUPERIOR (SELECTOR DE TEMAS) ------
+'''
 barra_menu = tk.Menu(window)
 window.config(menu=barra_menu)
 
@@ -941,7 +943,7 @@ menu_temas.add_command(label="Por defecto", command=tema_defecto)
 menu_temas.add_command(label="Rosa", command=tema_rosa)
 menu_temas.add_command(label="Amarillo", command=tema_amarillo)
 menu_temas.add_command(label="Verde", command=tema_verde)
-
+'''
 # ------ FRAME MOSTRAR GRÁFICOS ------
 
 frame_graficos = tk.LabelFrame(window, text="Visualización gráficos")
@@ -1014,8 +1016,8 @@ boton_kml.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.S + tk.E 
 boton_schengen = ttk.Button(frame_visualizacion, text="Guardar aeropuertos Schengen en .txt", command=archivo_Schengen)
 boton_schengen.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W, columnspan=2)
 
-boton_misma_letra = ttk.Button(frame_visualizacion, text="Google Earth: ICAO misma letra", command=earth_aeropuertos_misma_letra)
-boton_misma_letra.grid(row=2, column=0, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W, columnspan=2)
+#boton_misma_letra = ttk.Button(frame_visualizacion, text="Google Earth: ICAO misma letra", command=earth_aeropuertos_misma_letra)
+#boton_misma_letra.grid(row=2, column=0, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W, columnspan=2)
 # ------ FRAME LISTADO AEROPUERTOS ------
 
 frame_listado = tk.LabelFrame(frame_v1, text="Listado aeropuertos")
