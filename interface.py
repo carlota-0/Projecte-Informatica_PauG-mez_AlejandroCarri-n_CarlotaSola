@@ -54,7 +54,10 @@ def importar_archivo():
         title="Seleccione un archivo",
         filetypes=(("Archivos CSV", "*.txt"), ("Todos los archivos", "*.*"))
     )
+    if not file_path:
+        return None
     provisional = LoadAirports(file_path)
+    nuevos = 0
     for i in range(len(provisional)):
         encontrado = False
         j = 0
@@ -65,7 +68,9 @@ def importar_archivo():
                 j += 1
         if not(encontrado):
             aeropuertos.append(provisional[i])
+            nuevos += 1
     mostrar_aeropuertos()
+    messagebox.showinfo('Aeropuertos cargados', f'Se cargaron {nuevos} aeropuertos')
     return None
 def graficoAeropuertos():
     if aeropuertos:
@@ -128,7 +133,10 @@ def cargar_vuelos():
         title="Seleccione un archivo",
         filetypes=(("Archivos CSV", "*.txt"), ("Todos los archivos", "*.*"))
     )
+    if not archivo:
+        return None
     provisional = LoadArrivals(archivo)
+    nuevos = 0
     for i in range(len(provisional)):
         encontrado = False
         j = 0
@@ -139,7 +147,9 @@ def cargar_vuelos():
                 j += 1
         if not(encontrado):
             aircrafts.append(provisional[i])
+            nuevos += 1
     mostrar_vuelos()
+    messagebox.showinfo('Llegadas cargadas', f'Se cargaron {nuevos} vuelos de llegada')
 def cargar_salidas():
     global departures_list
     archivo = filedialog.askopenfilename(
@@ -150,6 +160,13 @@ def cargar_salidas():
         return None
     departures_list = LoadDepartures(archivo)
     if len(departures_list) > 0:
+        # Si aun no hay llegadas cargadas, mostrar las salidas en el listado
+        if len(aircrafts) == 0:
+            listadovuelos.delete(0, 'end')
+            for i in range(len(departures_list)):
+                dst = departures_list[i].destination_airport if departures_list[i].destination_airport else "---"
+                sal = departures_list[i].time_of_departure if departures_list[i].time_of_departure else "---"
+                listadovuelos.insert(tk.END, f'ID: {departures_list[i].id}\t\tCompañía: {departures_list[i].company}\t\tDestino: {dst}\t\tSalida: {sal}')
         messagebox.showinfo('Salidas cargadas', f'Se han cargado {len(departures_list)} salidas')
     else:
         messagebox.showwarning('Sin datos', 'El archivo no contenía datos de salidas')
@@ -310,6 +327,7 @@ def asignar_puertas_nocturnas():
         else:
             messagebox.showinfo('Puertas nocturnas', f'Se asignaron {resultado} puertas a aviones nocturnos')
         mostrar_puertas()
+        mostrar_vuelos()
     return None
 
 #Funcion V4
