@@ -160,6 +160,12 @@ def cargar_vuelos():
             nuevos += 1
     mostrar_vuelos()
     messagebox.showinfo('Llegadas cargadas', f'Se cargaron {nuevos} vuelos de llegada')
+    if len(departures_list) > 0 and messagebox.askyesno('Combinar movimientos', 'Hay salidas cargadas. ¿Quiere combinar llegadas y salidas automáticamente?'):
+        resultado = MergeMovements(aircrafts, departures_list)
+        if resultado != -1:
+            aircrafts = resultado
+            mostrar_vuelos()
+            messagebox.showinfo('Combinación completada', f'Movimientos combinados. Total: {len(aircrafts)} aeronaves')
 def cargar_salidas():
     #cargar vuelos de salida desde un archivo
     global departures_list
@@ -181,6 +187,12 @@ def cargar_salidas():
         messagebox.showinfo('Salidas cargadas', f'Se han cargado {len(departures_list)} salidas')
     else:
         messagebox.showwarning('Sin datos', 'El archivo no contenía datos de salidas')
+    if len(aircrafts) > 0 and messagebox.askyesno('Combinar movimientos', 'Hay llegadas cargadas. ¿Quiere combinar salidas y llegadas automáticamente?'):
+        resultado = MergeMovements(aircrafts, departures_list)
+        if resultado != -1:
+            aircrafts = resultado
+            mostrar_vuelos()
+            messagebox.showinfo('Combinación completada', f'Movimientos combinados. Total: {len(aircrafts)} aeronaves')
     return None
 def fusionar_movimientos():
     #fusionar llegadas y salidas del mismo avión
@@ -356,36 +368,23 @@ def asignar_puertas_nocturnas():
 
 
 def PlotDayOccupancy(bcn, aircrafts):
-    """
-    CORREGIDA Y BLINDADA: Calcula la ocupación teórica de las 24h paso a paso
-    sin romper ni vaciar el objeto 'bcn' principal de la interfaz.
-    """
-    import matplotlib.pyplot as plt
+    #calcular ocupación de puertas en 24h y devolver figura
     import copy
 
     if not bcn or not aircrafts:
-        from tkinter import messagebox
-        messagebox.showerror('Error', 'Faltan los datos del aeropuerto (V3), los vuelos (V2) o ambos.')
-        return
+        return None
 
-    # CLONAMOS el aeropuerto para que las liberaciones de puertas ocurran en una copia
-    # y no destruyan los datos del aeropuerto principal que usa el slider.
     bcn_copia = copy.deepcopy(bcn)
-
-    horas = [f"{str(h).zfill(2)}:00" for h in range(24)]
     terminal_names = [t.name for t in bcn_copia.terminals]
     ocupacion_por_terminal = {name: [0] * 24 for name in terminal_names}
 
-    # Inicializamos la copia con los aviones nocturnos a las 00:00
     AssignNightGates(bcn_copia, aircrafts)
 
-    for h_idx, hora_actual in enumerate(horas):
-        # 1. Correr las asignaciones minuto a minuto para esta hora completa
+    for h_idx in range(24):
         for m in range(60):
             tiempo_sim_str = f"{str(h_idx).zfill(2)}:{str(m).zfill(2)}"
             AssignGatesAtTime(bcn_copia, aircrafts, tiempo_sim_str)
 
-        # 2. Contar de manera precisa cuántas puertas quedan ocupadas al final de esta hora
         for terminal in bcn_copia.terminals:
             count = 0
             for area in getattr(terminal, 'Boarding_area', []):
@@ -394,19 +393,21 @@ def PlotDayOccupancy(bcn, aircrafts):
                         count += 1
             ocupacion_por_terminal[terminal.name][h_idx] = count
 
-    # --- Renderizado del gráfico de líneas ---
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig = Figure()
+    ax = fig.add_subplot(111)
     for name, datos_hora in ocupacion_por_terminal.items():
-        ax.plot(horas, datos_hora, marker='o', linewidth=2, label=f"Terminal {name}")
+        ax.plot(range(24), datos_hora, marker='o', linewidth=2, label=f"Terminal {name}")
 
-    ax.set_xlabel("Hora del día (00:00 a 23:00)", fontweight='bold')
+    marcas = [h for h in range(24) if h % 3 == 0]
+    ax.set_xticks(marcas)
+    ax.set_xlabel("Hora (h)", fontweight='bold')
     ax.set_ylabel("Número de Puertas Ocupadas", fontweight='bold')
-    ax.set_title("Evolución de la Ocupación en las 24 horas (LEBL)", fontsize=13, fontweight='bold', pad=10)
+    ax.set_title("Evolución de la Ocupación\nen las 24 horas (LEBL)", fontsize=13, fontweight='bold', pad=10)
     ax.grid(True, linestyle='--', alpha=0.5)
     ax.legend(loc='upper left')
+    fig.tight_layout()
 
-    plt.tight_layout()
-    plt.show()
+    return fig
 
 
 def MostrarMapaInteractivo(bcn, aircrafts):
@@ -812,10 +813,29 @@ hscrollbar.config(command=listadopuertas.xview)
 
 
 # ------ SECCIÓN V4 CONTROL DE INTERFAZ (LIMPIO) ------
+def grafico_ocupacion():
+    #mostrar gráfico de ocupación de puertas en 24h
+    fig = PlotDayOccupancy(bcn, aircrafts)
+    if fig is None:
+        messagebox.showerror('Error', 'Faltan los datos del aeropuerto, los vuelos o ambos.')
+        return
+    global canvas, canvas_graficos
+    fig.set_size_inches(1, 1)
+    fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.10)
+
+    canvas = FigureCanvasTkAgg(fig, master=frame_graficos)
+
+    if 'canvas_graficos' in globals():
+        canvas_graficos.grid_forget()
+    canvas_graficos = canvas.get_tk_widget()
+    canvas_graficos.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W, padx=15, pady=15)
+
+    canvas.draw()
+
 boton_grafico_v4 = tk.Button(
     frame_puertas,
     text="Gráfico Ocupación 24h",
-    command=lambda: PlotDayOccupancy(bcn, aircrafts)
+    command=grafico_ocupacion
 )
 boton_grafico_v4.grid(row=0, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 

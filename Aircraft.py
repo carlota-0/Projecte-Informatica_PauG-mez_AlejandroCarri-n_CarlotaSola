@@ -98,36 +98,35 @@ def PlotFlightsType(aircrafts):
     return fig
 
 def PlotArrivals(aircrafts):
-    try:
-        #definir una lista Horas y llenarla con los números del 0 al 23 (24h ya son las Oh del día siguiente)
-        horas = []
-        for i in range (24):
-            horas.append(i)
-        #definir una lista vuelos donde se cuentan el número de vuelos que hay por franja de horas 0-1, 1-2...
-        vols = [0] * len(horas)
-        #contar vuelos por hora
-        for i in range (len(aircrafts)):
-            horacompleta = aircrafts[i].time_of_landing
-            horacompleta = horacompleta.split(":")
-            hora = int(horacompleta[0])
-            vols[hora] = vols[hora] + 1
-        #definir el gráfico
-        fig = Figure()
-        ax = fig.add_subplot(111)
+    #definir una lista Horas y llenarla con los números del 0 al 23 (24h ya son las Oh del día siguiente)
+    horas = []
+    for i in range (24):
+        horas.append(i)
+    #definir una lista vuelos donde se cuentan el número de vuelos que hay por franja de horas 0-1, 1-2...
+    vols = [0] * len(horas)
+    #contar vuelos por hora (solo aviones con hora de llegada)
+    for i in range (len(aircrafts)):
+        if not aircrafts[i].time_of_landing:
+            continue
+        horacompleta = aircrafts[i].time_of_landing
+        horacompleta = horacompleta.split(":")
+        hora = int(horacompleta[0])
+        vols[hora] = vols[hora] + 1
+    #definir el gráfico
+    fig = Figure()
+    ax = fig.add_subplot(111)
 
-        marcas = []
-        for i in range (len(horas)):
-            if horas[i]%2 == 0 or horas[i] == 0:
-                marcas.append(horas[i])
-        ax.bar(horas, vols, color="#458B73")
-        ax.set_xticks(marcas)
-        ax.set_title("Distribución de los vuelos entrantes por hora", family="monospace", weight="bold", size="medium")
-        ax.set_xlabel('Franjas horarias de vuelos')
-        ax.set_ylabel('Número de vuelos')
+    marcas = []
+    for i in range (len(horas)):
+        if horas[i]%2 == 0 or horas[i] == 0:
+            marcas.append(horas[i])
+    ax.bar(horas, vols, color="#458B73")
+    ax.set_xticks(marcas)
+    ax.set_title("Distribución de los vuelos entrantes por hora", family="monospace", weight="bold", size="medium")
+    ax.set_xlabel('Franjas horarias de vuelos')
+    ax.set_ylabel('Número de vuelos')
 
-        return fig
-    except ValueError:
-        print("Error en los datos")
+    return fig
 
 def PlotAirlines(aircrafts):
     #definir una lista con todas las aerolíneas distintas
