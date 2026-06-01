@@ -215,7 +215,6 @@ def fusionar_movimientos():
     mostrar_vuelos()
     messagebox.showinfo('Fusión completada', f'Se han fusionado los movimientos. Total: {len(aircrafts)} aeronaves')
     return None
-
 def exportar_vuelos():
     #exportar vuelos a un archivo
     archivo = filedialog.asksaveasfilename(
@@ -320,10 +319,10 @@ def grafico_vuelosPorCompania():
                 fig = PlotAirlinesFiltered(aircrafts, seleccionadas, False)
             mostrar_figura(fig)
 
-        tk.Button(sel, text="Aceptar", command=confirmar, width=15).pack(pady=10)
+        ttk.Button(sel, text="Aceptar", command=confirmar, width=15).pack(pady=10)
 
-    tk.Button(top, text="Top 5 aerolíneas + Otras", command=elegir_top5, width=25).pack(pady=5)
-    tk.Button(top, text="Seleccionar aerolíneas", command=elegir_seleccion, width=25).pack(pady=5)
+    ttk.Button(top, text="Top 5 aerolíneas + Otras", command=elegir_top5, width=25).pack(pady=5)
+    ttk.Button(top, text="Seleccionar aerolíneas", command=elegir_seleccion, width=25).pack(pady=5)
 
 def mostrar_figura(fig):
     #mostrar figura en el frame de gráficos
@@ -447,8 +446,6 @@ def asignar_puertas_nocturnas():
     return None
 
 #Funcion V4
-
-
 def PlotDayOccupancy(bcn, aircrafts):
     #calcular ocupación de puertas en 24h y devolver figura
     import copy
@@ -490,8 +487,6 @@ def PlotDayOccupancy(bcn, aircrafts):
     fig.tight_layout()
 
     return fig
-
-
 def MostrarMapaInteractivo(bcn, aircrafts):
     import matplotlib.pyplot as plt
     from matplotlib.widgets import Slider, RadioButtons
@@ -645,9 +640,6 @@ def MostrarMapaInteractivo(bcn, aircrafts):
     # Lanzamiento inicial
     simular_y_draw()
     plt.show()
-
-
-
 def earth_aeropuertos_misma_letra():
     if aeropuertos:  # Comprobamos que la lista general no esté vacía
         aeropuertos_filtrados = [] #Con este bucle nos quedaremos solamente con los aeropuertos que nos interesan
@@ -672,6 +664,120 @@ def earth_aeropuertos_misma_letra():
 
     else:
         messagebox.showerror(title='Error', message='Lista de aeropuertos vacía')
+def cambiar_tema(color_fondo, color_boton):
+    # 1. Pintar el fondo de la ventana principal
+    window.config(bg=color_fondo)
+
+    # 2. Configurar el estilo de los botones (La clave para que funcione en macOS)
+    estilo = ttk.Style()
+    estilo.theme_use('default')  # Fuerza al sistema a dejarnos cambiar los colores
+    estilo.configure('TButton', background=color_boton)
+
+    # 3. Función recursiva para pintar todos los marcos y textos por dentro
+    def pintar_widgets(widget):
+        # Filtramos para no pintar donde el usuario escribe, listas o canvas
+        if not isinstance(widget, (tk.Entry, tk.Listbox, tk.Canvas, tk.Scrollbar, ttk.Separator, ttk.Combobox)):
+            try:
+                widget.config(bg=color_fondo)
+            except tk.TclError:
+                pass  # Si el elemento no tiene propiedad de fondo, lo ignoramos
+
+        # Repetimos para todos los elementos dentro de este widget
+        for hijo in widget.winfo_children():
+            pintar_widgets(hijo)
+
+    pintar_widgets(window)
+def generar_reporte_diario():
+    # 1. Comprobar que hay datos mínimos para hacer un reporte
+    if len(aircrafts) == 0:
+        messagebox.showerror('Error', 'No hay vuelos cargados o fusionados para generar el reporte.')
+        return
+
+    # 2. Abrir explorador para elegir dónde guardar el archivo
+    archivo = filedialog.asksaveasfilename(
+        title="Guardar Reporte Diario",
+        defaultextension=".txt",
+        initialfile="Reporte_LEBL_Cierre.txt",
+        filetypes=(("Archivos de texto", "*.txt"), ("Todos los archivos", "*.*"))
+    )
+    if not archivo:
+        return
+
+    try:
+        # 3. Recopilar datos directamente de la lista global combinada
+        total_aeronaves = len(aircrafts)
+
+        # Contadores de tipos de vuelo
+        llegadas = sum(1 for ac in aircrafts if getattr(ac, 'time_of_landing', '') != "")
+        salidas = sum(1 for ac in aircrafts if getattr(ac, 'time_of_departure', '') != "")
+        pernoctaciones = sum(1 for ac in aircrafts if
+                             getattr(ac, 'time_of_departure', '') != "" and getattr(ac, 'time_of_landing', '') == "")
+
+        # Calcular Top 3 Aerolíneas
+        conteo_cias = {}
+        for ac in aircrafts:
+            conteo_cias[ac.company] = conteo_cias.get(ac.company, 0) + 1
+        # Ordenamos el diccionario de mayor a menor y nos quedamos con los 3 primeros
+        top_3 = sorted(conteo_cias.items(), key=lambda x: x[1], reverse=True)[:3]
+
+        # Calcular Larga Distancia usando tu función oficial
+        num_largos = 0
+        if aeropuertos:
+            try:
+                largos = LongDistanceArrivals(aircrafts, aeropuertos)
+                if largos:
+                    num_largos = len(largos)
+            except Exception:
+                pass
+
+        # Calcular ocupación actual de puertas en el aeropuerto (estado bcn)
+        puertas_ocupadas = 0
+        total_puertas = 0
+        if bcn:
+            for terminal in bcn.terminals:
+                for area in getattr(terminal, 'Boarding_area', []):
+                    for gate in getattr(area, 'Gate', []):
+                        total_puertas += 1
+                        if getattr(gate, 'occupied', False) or getattr(gate, 'Occupied', False):
+                            puertas_ocupadas += 1
+
+        # 4. Escribir el archivo con formato visual de "Ticket de Operaciones"
+        with open(archivo, 'w', encoding='utf-8') as f:
+            f.write("=========================================================\n")
+            f.write("          REPORTE DIARIO DE OPERACIONES - LEBL           \n")
+            f.write("=========================================================\n\n")
+
+            f.write(">>> RESUMEN GLOBAL DE TRÁFICO <<<\n")
+            f.write("---------------------------------------------------------\n")
+            f.write(f"Total de aeronaves gestionadas : {total_aeronaves}\n")
+            f.write(f"Vuelos de llegada procesados   : {llegadas}\n")
+            f.write(f"Vuelos de salida procesados    : {salidas}\n")
+            f.write(f"Pernoctaciones (solo salida)   : {pernoctaciones}\n\n")
+
+            f.write(">>> MÉTRICAS DE EFICIENCIA Y SEGURIDAD <<<\n")
+            f.write("---------------------------------------------------------\n")
+            f.write(f"Llegadas larga distancia (>2000km): {num_largos} \n")
+
+            if total_puertas > 0:
+                porcentaje = (puertas_ocupadas / total_puertas) * 100
+                f.write(
+                    f"Estado de puertas al cierre       : {puertas_ocupadas}/{total_puertas} ({porcentaje:.1f}% de ocupación)\n")
+            else:
+                f.write("Estado de puertas al cierre       : Aeropuerto no cargado\n")
+            f.write("\n")
+
+            f.write(">>> TOP 3 AEROLÍNEAS DEL DÍA <<<\n")
+            f.write("---------------------------------------------------------\n")
+            for i, (cia, cantidad) in enumerate(top_3):
+                f.write(f"{i + 1}. {cia} - {cantidad} vuelos operativos\n")
+
+
+        messagebox.showinfo('Reporte Generado',
+                            f'El reporte de cierre diario se ha guardado correctamente en:\n{archivo}')
+
+    except Exception as e:
+        messagebox.showerror('Error', f'Ocurrió un error al generar el reporte:\n{e}')
+
 # ------ CONFIGURACION VENTANA ------
 
 window = Tk()
@@ -685,6 +791,62 @@ window.columnconfigure(1, weight=1, minsize=500)
 window.rowconfigure(0, weight=1)
 window.rowconfigure(1, weight=1)
 window.rowconfigure(2, weight=1)
+
+
+# ------ FUNCIONES DE TEMA (COLORES) ------
+def cambiar_tema(color_fondo, color_boton):
+    # 1. Pintar el fondo de la ventana principal
+    window.config(bg=color_fondo)
+
+    # 2. Configurar el estilo de los botones (La clave para que funcione en macOS)
+    estilo = ttk.Style()
+    estilo.theme_use('default')  # Fuerza al sistema a dejarnos cambiar los colores
+    estilo.configure('TButton', background=color_boton)
+
+    # 3. Función recursiva para pintar todos los marcos y textos por dentro
+    def pintar_widgets(widget):
+        # Filtramos para no pintar donde el usuario escribe, listas o canvas
+        if not isinstance(widget, (tk.Entry, tk.Listbox, tk.Canvas, tk.Scrollbar, ttk.Separator)):
+            try:
+                widget.config(bg=color_fondo)
+            except tk.TclError:
+                pass  # Si el elemento no tiene propiedad de fondo, lo ignoramos
+
+        # Repetimos para todos los elementos dentro de este widget
+        for hijo in widget.winfo_children():
+            pintar_widgets(hijo)
+
+    pintar_widgets(window)
+
+
+def tema_rosa():
+    cambiar_tema('#ffa6d9', '#ff788c')
+
+
+def tema_amarillo():
+    cambiar_tema('#ffbf6e', '#ffb852')
+
+
+def tema_verde():
+    cambiar_tema('#94ff94', '#2dbc94')
+
+
+def tema_defecto():
+    # Colores grises por defecto de la interfaz clásica
+    cambiar_tema('#ececec', '#e0e0e0')
+
+
+# ------ MENÚ SUPERIOR (SELECTOR DE TEMAS) ------
+barra_menu = tk.Menu(window)
+window.config(menu=barra_menu)
+
+menu_temas = tk.Menu(barra_menu, tearoff=0)
+barra_menu.add_cascade(label="Temas", menu=menu_temas)
+
+menu_temas.add_command(label="Por defecto", command=tema_defecto)
+menu_temas.add_command(label="Rosa", command=tema_rosa)
+menu_temas.add_command(label="Amarillo", command=tema_amarillo)
+menu_temas.add_command(label="Verde", command=tema_verde)
 
 # ------ FRAME MOSTRAR GRÁFICOS ------
 
@@ -729,13 +891,13 @@ lbl_lon.grid(row=0, column=2, padx = 5, sticky = tk.W)
 entry_lon = tk.Entry(frame_aeropuerto, width=10)
 entry_lon.grid(row=1, column=2, padx = 5, pady = (0,5), sticky = tk.N + tk.S + tk.E + tk.W)
 
-btn_anadir = tk.Button(frame_aeropuerto, text="Añadir", command=anadir)
+btn_anadir = ttk.Button(frame_aeropuerto, text="Añadir", command=anadir)
 btn_anadir.grid(row=1, column=3, padx=(5,0), pady=(0,5), sticky=tk.N + tk.S + tk.E + tk.W)
 
-btn_suprimir = tk.Button(frame_aeropuerto, text="Eliminar", command=suprimir)
+btn_suprimir = ttk.Button(frame_aeropuerto, text="Eliminar", command=suprimir)
 btn_suprimir.grid(row=1, column=4, padx=(0,5), pady=(0,5), sticky=tk.N + tk.S + tk.E + tk.W)
 
-boton_cargar = tk.Button(frame_aeropuerto, text="Cargar archivo de aeropuertos", command=importar_archivo)
+boton_cargar = ttk.Button(frame_aeropuerto, text="Cargar archivo de aeropuertos", command=importar_archivo)
 boton_cargar.grid(row=2, column=0, columnspan=5, padx=5, pady=(0,5), sticky=tk.N + tk.S + tk.E + tk.W)
 
 # ------ FRAME VISUALIZACION DATOS ------
@@ -747,16 +909,16 @@ frame_visualizacion.grid_columnconfigure(1, weight=1)
 frame_visualizacion.grid_rowconfigure(0, weight=1)
 frame_visualizacion.grid_rowconfigure(1, weight=1)
 
-boton_grafico = tk.Button(frame_visualizacion, text="Gráfico Schengen/No-Schengen", command=graficoAeropuertos)
+boton_grafico = ttk.Button(frame_visualizacion, text="Gráfico Schengen/No-Schengen", command=graficoAeropuertos)
 boton_grafico.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
-boton_kml = tk.Button(frame_visualizacion, text="Visualizar en Google Earth", command=map_airports)
+boton_kml = ttk.Button(frame_visualizacion, text="Visualizar en Google Earth", command=map_airports)
 boton_kml.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
-boton_schengen = tk.Button(frame_visualizacion, text="Guardar aeropuertos Schengen en .txt", command=archivo_Schengen)
+boton_schengen = ttk.Button(frame_visualizacion, text="Guardar aeropuertos Schengen en .txt", command=archivo_Schengen)
 boton_schengen.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W, columnspan=2)
 
-boton_misma_letra = tk.Button(frame_visualizacion, text="Google Earth: ICAO misma letra", command=earth_aeropuertos_misma_letra)
+boton_misma_letra = ttk.Button(frame_visualizacion, text="Google Earth: ICAO misma letra", command=earth_aeropuertos_misma_letra)
 boton_misma_letra.grid(row=2, column=0, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W, columnspan=2)
 # ------ FRAME LISTADO AEROPUERTOS ------
 
@@ -801,19 +963,19 @@ frame_gestionvuelos.grid_rowconfigure(2, weight=1)
 frame_gestionvuelos.grid_columnconfigure(0, weight=1)
 frame_gestionvuelos.grid_columnconfigure(1, weight=1)
 
-boton_cargarvuelos = tk.Button(frame_gestionvuelos, text="Cargar vuelos", command=cargar_vuelos)
+boton_cargarvuelos = ttk.Button(frame_gestionvuelos, text="Cargar vuelos", command=cargar_vuelos)
 boton_cargarvuelos.grid(row=0, column=0, padx=(5,0), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
-boton_exportarvuelos = tk.Button(frame_gestionvuelos, text="Exportar vuelos", command=exportar_vuelos)
+boton_exportarvuelos = ttk.Button(frame_gestionvuelos, text="Exportar vuelos", command=exportar_vuelos)
 boton_exportarvuelos.grid(row=0, column=1, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 separador_fusion = ttk.Separator(frame_gestionvuelos, orient="horizontal")
 separador_fusion.grid(row=1, column=0, columnspan=2, sticky=tk.W + tk.E, padx=5, pady=2)
 
-boton_cargarsalidas = tk.Button(frame_gestionvuelos, text="Cargar salidas", command=cargar_salidas)
+boton_cargarsalidas = ttk.Button(frame_gestionvuelos, text="Cargar salidas", command=cargar_salidas)
 boton_cargarsalidas.grid(row=2, column=0, padx=(5,0), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
-boton_fusionar = tk.Button(frame_gestionvuelos, text="Combinar Salidas y Llegadas", command=fusionar_movimientos)
+boton_fusionar = ttk.Button(frame_gestionvuelos, text="Combinar Salidas y Llegadas", command=fusionar_movimientos)
 boton_fusionar.grid(row=2, column=1, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 # ------ FRAME GRAFICOS VUELOS ------
@@ -825,13 +987,13 @@ frame_graficosvuelos.grid_columnconfigure(1, weight=1)
 frame_graficosvuelos.grid_rowconfigure(0, weight=1)
 frame_graficosvuelos.grid_rowconfigure(1, weight=1)
 
-boton_vuelosschengen = tk.Button(frame_graficosvuelos, text="Schengen/No-Schengen", command=grafico_vuelosSchengen)
+boton_vuelosschengen = ttk.Button(frame_graficosvuelos, text="Schengen/No-Schengen", command=grafico_vuelosSchengen)
 boton_vuelosschengen.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
-boton_vueloscompania = tk.Button(frame_graficosvuelos, text="Por compañia", command=grafico_vuelosPorCompania)
+boton_vueloscompania = ttk.Button(frame_graficosvuelos, text="Por compañia", command=grafico_vuelosPorCompania)
 boton_vueloscompania.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
-boton_vueloshora = tk.Button(frame_graficosvuelos, text="Por horas", command=grafico_vuelosPorLlegada)
+boton_vueloshora = ttk.Button(frame_graficosvuelos, text="Por horas", command=grafico_vuelosPorLlegada)
 boton_vueloshora.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W, columnspan=2)
 
 # ------ FRAME LISTADO AEROPUERTO ------
@@ -849,10 +1011,10 @@ frame_earth.grid_columnconfigure(0, weight=1)
 frame_earth.grid_columnconfigure(1, weight=1)
 frame_earth.grid_rowconfigure(0, weight=1)
 
-boton_earthvuelos = tk.Button(frame_earth, text="Mostrar todos los vuelos", command=earth_vuelos)
+boton_earthvuelos = ttk.Button(frame_earth, text="Mostrar todos los vuelos", command=earth_vuelos)
 boton_earthvuelos.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
-boton_vueloslargos = tk.Button(frame_earth, text="Mostrar vuelos de larga distancia", command=earth_largaDistancia)
+boton_vueloslargos = ttk.Button(frame_earth, text="Mostrar vuelos de larga distancia", command=earth_largaDistancia)
 boton_vueloslargos.grid(row = 0, column = 1, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
 # ------ LISTBOX LISTA VUELOS + SCROLLBAR------
@@ -894,13 +1056,13 @@ frame_puertas.grid_columnconfigure(1, weight=1)
 
 # ------ BOTONS ------
 
-boton_estructura = tk.Button(frame_puertas, text="Cargar estructura del apuerto", command=cargar_estructura)
+boton_estructura = ttk.Button(frame_puertas, text="Cargar estructura del apuerto", command=cargar_estructura)
 boton_estructura.grid(row = 0, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
-boton_asignarpuerta = tk.Button(frame_puertas, text="Asignar puerta a cada vuelo", command=asignar_puertas)
+boton_asignarpuerta = ttk.Button(frame_puertas, text="Asignar puerta a cada vuelo", command=asignar_puertas)
 boton_asignarpuerta.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 
-boton_puertasnocturnas = tk.Button(frame_puertas, text="Asignar puertas nocturnas", command=asignar_puertas_nocturnas)
+boton_puertasnocturnas = ttk.Button(frame_puertas, text="Asignar puertas nocturnas", command=asignar_puertas_nocturnas)
 boton_puertasnocturnas.grid(row = 2, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 # ------ FRAME LISTADO PUERTAS ------
 
@@ -947,19 +1109,65 @@ def grafico_ocupacion():
 
     canvas.draw()
 
-boton_grafico_v4 = tk.Button(
+boton_grafico_v4 = ttk.Button(
     frame_puertas,
     text="Gráfico Ocupación 24h",
     command=grafico_ocupacion
 )
 boton_grafico_v4.grid(row=0, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
-boton_mapa_interactivo = tk.Button(
+boton_mapa_interactivo = ttk.Button(
     frame_puertas,
     text="Plano Dinámico Real",
     command=lambda: MostrarMapaInteractivo(bcn, aircrafts)
 )
 boton_mapa_interactivo.grid(row=1, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+
+# ------ SELECTOR DE TEMA VISUAL ------
+frame_tema = tk.LabelFrame(frame_puertas, text="Tema Visual")
+frame_tema.grid(row=2, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+
+opciones_tema = ["Por defecto", "Rosa", "Amarillo", "Verde", "Azul"]
+tema_seleccionado = tk.StringVar(value="Por defecto")
+
+combo_tema = ttk.Combobox(frame_tema, textvariable=tema_seleccionado, values=opciones_tema, state="readonly")
+combo_tema.pack(padx=10, pady=5, expand=True)
+
+def aplicar_tema(event):
+    seleccion = tema_seleccionado.get()
+    if seleccion == "Rosa":
+        # Fondo: Rosa nube | Botón: Rosa chicle suave
+        cambiar_tema('#FCE4EC', '#F48FB1')
+
+    elif seleccion == "Amarillo":
+        # Fondo: Vainilla claro | Botón: Amarillo melocotón
+        cambiar_tema('#FFF9C4', '#FFE082')
+
+    elif seleccion == "Verde":
+        # Fondo: Menta muy claro | Botón: Verde pistacho suave
+        cambiar_tema('#E8F5E9', '#A5D6A7')
+
+    elif seleccion == "Azul":
+        # Fondo: Azul hielo | Botón: Azul cielo
+        cambiar_tema('#E3F2FD', '#90CAF9')
+
+    else:
+        # Colores grises por defecto de la interfaz clásica
+        cambiar_tema('#ececec', '#e0e0e0')
+
+# Activar la función cuando el usuario elija algo en el desplegable
+combo_tema.bind("<<ComboboxSelected>>", aplicar_tema)
+
+
+
+# ------ BOTÓN GENERAR REPORTE DIARIO ------
+boton_reporte = ttk.Button(
+    frame_puertas,
+    text="Generar Reporte Diario de Cierre",
+    command=generar_reporte_diario
+)
+boton_reporte.grid(row=3, column=0, columnspan=2, padx=5, pady=10, sticky=tk.N + tk.S + tk.E + tk.W)
+
 
 
 window.mainloop()
