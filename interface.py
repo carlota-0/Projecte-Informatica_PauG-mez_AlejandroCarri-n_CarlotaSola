@@ -511,7 +511,6 @@ frame_v1.grid_columnconfigure(0, weight=0)
 frame_v1.grid_columnconfigure(1, weight=1, minsize=460)
 frame_v1.grid_rowconfigure(0, weight=0)
 frame_v1.grid_rowconfigure(1, weight=1)
-frame_v1.grid_rowconfigure(2, weight=1)
 
 # ------ FRAME DATOS AEROPUERTO ------
 
@@ -521,49 +520,36 @@ frame_aeropuerto.grid(row=0, column=0, padx=10, pady=5, sticky = tk.N + tk.S + t
 # ------ FORMULARIOS DATOS AEROPUERTOS ------
 
 lbl_icao = tk.Label(frame_aeropuerto, text="ICAO")
-lbl_icao.grid(row=0, column=0, padx = 10, sticky = tk.W)
+lbl_icao.grid(row=0, column=0, padx = 5, sticky = tk.W)
 
-entry_icao = tk.Entry(frame_aeropuerto, width=15)
-entry_icao.grid(row=1, column=0, padx = 10, pady = (0,5), sticky = tk.N + tk.S + tk.E + tk.W)
+entry_icao = tk.Entry(frame_aeropuerto, width=10)
+entry_icao.grid(row=1, column=0, padx = 5, pady = (0,5), sticky = tk.N + tk.S + tk.E + tk.W)
 
 lbl_lat = tk.Label(frame_aeropuerto, text="Latitud")
-lbl_lat.grid(row=0, column=1, padx = 10, sticky = tk.W)
+lbl_lat.grid(row=0, column=1, padx = 5, sticky = tk.W)
 
-entry_lat = tk.Entry(frame_aeropuerto, width=15)
-entry_lat.grid(row=1, column=1, padx = 10, pady = (0,5), sticky = tk.N + tk.S + tk.E + tk.W)
+entry_lat = tk.Entry(frame_aeropuerto, width=10)
+entry_lat.grid(row=1, column=1, padx = 5, pady = (0,5), sticky = tk.N + tk.S + tk.E + tk.W)
 
 lbl_lon = tk.Label(frame_aeropuerto, text="Longitud")
-lbl_lon.grid(row=0, column=2, padx = 10, sticky = tk.W)
+lbl_lon.grid(row=0, column=2, padx = 5, sticky = tk.W)
 
-entry_lon = tk.Entry(frame_aeropuerto, width=15)
-entry_lon.grid(row=1, column=2, padx = 10, pady = (0,5), sticky = tk.N + tk.S + tk.E + tk.W)
+entry_lon = tk.Entry(frame_aeropuerto, width=10)
+entry_lon.grid(row=1, column=2, padx = 5, pady = (0,5), sticky = tk.N + tk.S + tk.E + tk.W)
 
-# ------ FRAME MODIFICACIONES ------
+btn_anadir = tk.Button(frame_aeropuerto, text="Añadir", command=anadir)
+btn_anadir.grid(row=1, column=3, padx=(5,0), pady=(0,5), sticky=tk.N + tk.S + tk.E + tk.W)
 
-frame_mod = tk.LabelFrame(frame_v1, text="Modificacion listado aeropuertos")
-frame_mod.grid(row = 1, column = 0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
-frame_mod.grid_rowconfigure(0, weight=1)
-frame_mod.grid_rowconfigure(1, weight=0)
-frame_mod.grid_rowconfigure(2, weight=1)
-frame_mod.grid_columnconfigure(0, weight=1)
-frame_mod.grid_columnconfigure(1, weight=0)
+btn_suprimir = tk.Button(frame_aeropuerto, text="Eliminar", command=suprimir)
+btn_suprimir.grid(row=1, column=4, padx=(0,5), pady=(0,5), sticky=tk.N + tk.S + tk.E + tk.W)
 
-boton_anadir = tk.Button(frame_mod, text="Añadir aeropuerto", command=anadir)
-boton_anadir.grid(row=0, column=0, padx=(5,0), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
-
-boton_suprimir = tk.Button(frame_mod, text="Suprimir aeropuerto", command=suprimir)
-boton_suprimir.grid(row=0, column=1, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
-
-separador_mod = ttk.Separator(frame_mod, orient="horizontal")
-separador_mod.grid(row=1, column=0, columnspan=2, sticky= tk.W + tk.E , padx=5, pady=5)
-
-boton_archivo = tk.Button(frame_mod, text="Cargar archivo .txt", command=importar_archivo)
-boton_archivo.grid(row=2, column=0, columnspan=2, padx=(0,5), pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+boton_cargar = tk.Button(frame_aeropuerto, text="Cargar archivo de aeropuertos", command=importar_archivo)
+boton_cargar.grid(row=2, column=0, columnspan=5, padx=5, pady=(0,5), sticky=tk.N + tk.S + tk.E + tk.W)
 
 # ------ FRAME VISUALIZACION DATOS ------
 
 frame_visualizacion = tk.LabelFrame(frame_v1, text="Opciones respecto al listado de aeropuertos")
-frame_visualizacion.grid(row=2, column=0, padx=10, pady=(5,10),sticky = tk.N + tk.S + tk.E + tk.W)
+frame_visualizacion.grid(row=1, column=0, padx=10, pady=5, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_visualizacion.grid_columnconfigure(0, weight=1)
 frame_visualizacion.grid_columnconfigure(1, weight=1)
 frame_visualizacion.grid_rowconfigure(0, weight=1)
@@ -581,7 +567,7 @@ boton_schengen.grid(row = 1, column = 0, padx=5, pady=5, sticky = tk.N + tk.S + 
 # ------ FRAME LISTADO AEROPUERTOS ------
 
 frame_listado = tk.LabelFrame(frame_v1, text="Listado aeropuertos")
-frame_listado.grid(row=0, column=1, padx=(0,10), pady=(0,5), rowspan=3, sticky = tk.N + tk.S + tk.E + tk.W)
+frame_listado.grid(row=0, column=1, padx=(0,10), pady=(0,5), rowspan=2, sticky = tk.N + tk.S + tk.E + tk.W)
 frame_listado.grid_rowconfigure(0, weight=1)
 frame_listado.grid_columnconfigure(0, weight=1)
 
