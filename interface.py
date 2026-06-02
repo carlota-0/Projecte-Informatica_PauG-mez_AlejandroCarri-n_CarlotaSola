@@ -482,6 +482,7 @@ def earth_vuelos():
         messagebox.showerror('Error','Faltan los datos de los vuelos, los datos de los aeropuertos o ambos')
 
 #Funcions V3
+puertas = False
 def cargar_estructura():
     #cargar estructura del aeropuerto desde un archivo
     archivo = filedialog.askopenfilename(
@@ -500,8 +501,8 @@ def cargar_estructura():
     return None
 def asignar_puertas():
     #asignar una puerta a cada vuelo
-    if not aircrafts or not bcn:
-        messagebox.showerror('Error', 'Listado de aviones vacío o falta estructura del aeropuerto')
+    if not aircrafts or not bcn or not puertas:
+        messagebox.showerror('Error', 'Listado de aviones vacío o falta estructura del aeropuerto o vigila que no aún no estén asignadas las puertas nocturnas')
     else:
         asignadas = 0
         for i in range (len(aircrafts)):
@@ -529,6 +530,7 @@ def asignar_puertas_nocturnas():
         messagebox.showerror('Error', 'Listado de aviones vacío o falta estructura del aeropuerto')
     else:
         resultado = AssignNightGates(bcn, aircrafts)
+        puertas = True
         if resultado == -1:
             messagebox.showerror('Error', 'Error al asignar puertas nocturnas')
         else:
@@ -872,6 +874,10 @@ def generar_reporte_diario():
 
     except Exception as e:
         messagebox.showerror('Error', f'Ocurrió un error al generar el reporte:\n{e}')
+
+
+def funcionalidades():
+    messagebox.showinfo('FUNCIONALIDADES ADICIONALES',f'- Cambio de color de la interfaz\n- Filtros para el gráfico de vuelos por aerolíneas\n- Automatismo para combinar salidas y llegadas\n- Generación de archivo de reporte diario\n- Mapa integrado en la interfaz\n- Visualización dinámica de la ocupación por horas del aeropuerto')
 
 # ------ CONFIGURACION VENTANA ------
 
@@ -1262,6 +1268,8 @@ combo_tema.bind("<<ComboboxSelected>>", aplicar_tema)
 boton_reporte = ttk.Button(frame_puertas, text="Generar Reporte Diario de Cierre", command=generar_reporte_diario)
 boton_reporte.grid(row=3, column=0, columnspan=2, padx=5, pady=10, sticky=tk.N + tk.S + tk.E + tk.W)
 
-
+# ------- BOTON EXTRAS -------
+boton_extras = ttk.Button(window, text="Funcionalidades adicionales", command=funcionalidades)
+boton_extras.grid(row=3, column=0, columnspan=2, padx=5, pady=10, sticky=tk.N + tk.S + tk.E + tk.W)
 
 window.mainloop()
