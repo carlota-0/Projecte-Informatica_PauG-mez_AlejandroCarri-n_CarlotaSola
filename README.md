@@ -50,4 +50,11 @@ Aquesta versió del projecte permet tractar els vols tenint en compte les seves 
      - Se li asigna una porta d'embarcament a cada vol en l'aeroport tractat
        
 :minidisc: El video de la versió 3 es pot trobar en aquest enllaç: [LINK](https://youtu.be/r30GyUsZ6rc)
+
+
 - [ ] <int>VERSIÓ 4:</ins>
+Aquesta és la última versió final del projecte, no tenim en compte només les arribades sino també les sortides (departures). A més, hem afegit funcions extres.
+     - Visualitzar el seguiment de les "gates" de sortides/arribades gràficament per hores.
+     - Nou filtre per la gràfica d'aerolinies on es pot escollir quines visualitzar.
+     - Representació gràfica de l'ocupació de les portes d'embarcament/ sortida amb una barra de temps interactiva que permet escollir la hora a la que es vol veure la ocupació de les portes de les terminals.
+     - Ara, el mapa per veure els vols de llarga distància està implementat en la interfaç perquè sigui més accessible.
