@@ -58,4 +58,4 @@ Aquesta és la última versió final del projecte, no tenim en compte només les
      - Nou filtre per la gràfica d'aerolinies on es pot escollir quines visualitzar.
      - Representació gràfica de l'ocupació de les portes d'embarcament/ sortida amb una barra de temps interactiva que permet escollir la hora a la que es vol veure la ocupació de les portes de les terminals.
      - Ara, el mapa per veure els vols de llarga distància està implementat en la interfaç perquè sigui més accessible.
-:minidisc: El video de la versió 3 es pot trobar en aquest enllaç: 
+:minidisc: El video de la versió 3 es pot trobar en aquest enllaç: [LINK](https://youtu.be/VPjnEYqS6CY)
